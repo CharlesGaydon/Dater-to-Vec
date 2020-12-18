@@ -1,0 +1,20 @@
+name: d2v_env
+channels:
+  - defaults
+  - anaconda
+  - conda-forge
+dependencies:
+  - python=3.7
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib
+  - pip
+  - keras
+  - tqdm
+  - jupyter
+  - black
+  - pre-commit
+  - flake8
+  - pytest
+  - virtualenv=20.0.33  # For compatibility with conda env; venv is called when using black!
