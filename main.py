@@ -5,19 +5,21 @@ from src.factorization_recommender import FactorizationRecommender
 
 # params
 k = 7
-type_of_value = "m"  # "r" or "m"
+type_of_value = "r"  # "r" or "m"
 
 
 def main():
     train = pd.read_csv(config.train_data_path)
-    # test = pd.read_csv(config.test_data_path)
+    test = pd.read_csv(config.test_data_path)
     utility_matrix, rater_index_dict, rated_index_dict = create_utility_matrix(
         train, type_of_value
     )
     print(utility_matrix.shape)
     fr = FactorizationRecommender(k)
     fr.fit(utility_matrix, rater_index_dict, rated_index_dict)
-    print(fr.predict(1, 133))
+    # print(fr.predict(1, 133))
+    rmse = fr.evaluate(test, type_of_value=type_of_value)
+    print(f"RMSE is: {rmse}")
 
 
 if __name__ == "__main__":

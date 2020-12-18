@@ -105,6 +105,19 @@ class FactorizationRecommender:
         score = np.dot(u_s_root, s_root_v) + self.mu_hat[0, rated_idx]
         return score
 
+    def evaluate(self, test_data, type_of_value="r"):
+
+        if type_of_value == "r":
+            rmse = 0
+            for row in test_data:
+                pred = self.predict(row[0], row[1])
+                obs = row[type_of_value]
+                rmse += (pred - obs) ** 2
+            return rmse / len(test_data)
+
+        if type_of_value == "m":
+            pass
+
     def save(self, path):
         pass
 
