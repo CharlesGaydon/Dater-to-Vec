@@ -2,8 +2,11 @@ import os
 import pandas as pd
 import numpy as np
 import requests
-from config import config
 from tqdm import tqdm
+import sys
+
+sys.path.insert(0, "./src")
+from config import config
 
 MAX_ID_IN_DATASET = 135359
 
@@ -18,8 +21,8 @@ def download_data(data_url, raw_data_path, force_download=False):
 
 def turn_ratings_into_matches(train, test, match_threshold=0.65):
     match_threshold_in_ratings = train["r"].quantile(q=match_threshold)
-    train["m"] = 1 * (train["r"] >= match_threshold_in_ratings)
-    test["m"] = 1 * (test["r"] >= match_threshold_in_ratings)
+    train = train.assign(m=1 * (train["r"].values >= match_threshold_in_ratings))
+    test = test.assign(m=1 * (test["r"].values >= match_threshold_in_ratings))
     return train, test
 
 
@@ -38,7 +41,9 @@ def train_test_split(
     assert max_u_id <= MAX_ID_IN_DATASET
     print("Train-Test splitting")
     ratings = pd.read_csv(raw_data_path, names=["rater", "rated", "r"])
-    u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)  # list of all raters
+
+    # list of all raters, already integers in our dataset
+    u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)
     test = pd.DataFrame(columns=ratings.columns)
     train = pd.DataFrame(columns=ratings.columns)
     test_ratio = 0.2  # fraction of data to be used as test set.
@@ -51,7 +56,7 @@ def train_test_split(
         dummy_test = temp.iloc[train_size:]
 
         if turn_into_matches:
-            train, test = turn_ratings_into_matches(train, test)
+            dummy_train, dummy_test = turn_ratings_into_matches(dummy_train, dummy_test)
 
         test = pd.concat([test, dummy_test], ignore_index=True)
         train = pd.concat([train, dummy_train], ignore_index=True)
@@ -97,7 +102,7 @@ def main():
         config.raw_data_path,
         config.train_data_path,
         config.test_data_path,
-        max_u_id=100,
+        max_u_id=10000,
     )
 
 

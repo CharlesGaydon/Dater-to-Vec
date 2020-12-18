@@ -100,9 +100,9 @@ class FactorizationRecommender:
         rater_idx = self.rater_index_dict[rater_id]
         rated_idx = self.rated_index_dict[rated_id]
         # reconstruct the score from decomposed matrix
-        u_s_root = np.dot(self.U[rater_idx, :], self.s_root)  # (1,k) array
+        u_s_root = np.dot(self.U[rater_idx, :], self.s_root)  # (k,) array
         s_root_v = np.dot(self.Vt[:, rated_idx], self.s_root)  # (k,1)
-        score = np.dot(u_s_root, s_root_v) + self.mu_hat[rated_idx]
+        score = np.dot(u_s_root, s_root_v) + self.mu_hat[0, rated_idx]
         return score
 
     def save(self, path):

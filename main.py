@@ -14,6 +14,7 @@ def main():
     utility_matrix, rater_index_dict, rated_index_dict = create_utility_matrix(
         train, type_of_value
     )
+    print(utility_matrix.shape)
     fr = FactorizationRecommender(k)
     fr.fit(utility_matrix, rater_index_dict, rated_index_dict)
     print(fr.predict(1, 133))
