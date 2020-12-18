@@ -17,4 +17,5 @@ dependencies:
   - pre-commit
   - flake8
   - pytest
+  - requests
   - virtualenv=20.0.33  # For compatibility with conda env; venv is called when using black!

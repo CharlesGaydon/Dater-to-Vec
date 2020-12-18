@@ -20,8 +20,8 @@ test:
 coverage:
 	pytest --cov=$(PROJECT_NAME) --cov-branch --cov-report=html
 
-.PHONY: install lint test coverage
 
+.PHONY: install lint test coverage
 
 ### Cheat Sheet
 
