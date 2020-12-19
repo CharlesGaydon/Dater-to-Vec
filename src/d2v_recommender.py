@@ -8,6 +8,9 @@ class D2V_Recommender:
     def predict(self, u, v):
         pass
 
+    def evaluate(self, test_data):
+        pass
+
     def save(self, path):
         pass
 

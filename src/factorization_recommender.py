@@ -1,7 +1,8 @@
 from functools import partial
-import numpy as np
 from scipy.linalg import sqrtm
 from scipy.sparse.linalg import svds
+import numpy as np
+import pandas as pd
 
 
 class FactorizationRecommender:
@@ -18,12 +19,16 @@ class FactorizationRecommender:
 
     # Modified from https://towardsdatascience.com/beginners-guide-to-creating-an-svd-recommender-system-1fd7326d1f65
     # This is not ideal since the traingn
-    def fit(self, utility_matrix, rater_index, rated_index):
+    def fit(self, train, type_of_value="r"):
 
         # save for use in prediction
 
-        self.rater_index_dict = rater_index
-        self.rated_index_dict = rated_index
+        utility_matrix, rater_index_dict, rated_index_dict = self.create_utility_matrix(
+            train, type_of_value
+        )
+
+        self.rater_index_dict = rater_index_dict
+        self.rated_index_dict = rated_index_dict
 
         k = self.k
 
@@ -42,6 +47,37 @@ class FactorizationRecommender:
 
         return self.U, self.s_root, self.Vt, self.mu_hat
 
+    def predict(self, rater_id, rated_id):
+        # go from id to index
+        rater_idx = self.rater_index_dict[int(rater_id)]
+        rated_idx = self.rated_index_dict[int(rated_id)]
+        # reconstruct the score from decomposed matrix
+        u_s_root = np.dot(self.U[rater_idx, :], self.s_root)  # (k,) array
+        s_root_v = np.dot(self.Vt[:, rated_idx], self.s_root)  # (k,1)
+        score = np.dot(u_s_root, s_root_v) + self.mu_hat[0, rated_idx]
+        return score
+
+    def evaluate(self, test_data, type_of_value="r"):
+
+        if type_of_value == "r":
+            rmse = 0
+            n = 0
+            for idx, row in test_data.iterrows():
+
+                try:
+                    pred = self.predict(row["rater"], row["rated"])
+                    obs = row[type_of_value]
+                    rmse += abs(pred - obs)
+                    n += 1
+                except:
+                    pass
+                    # Other user never seen before
+            return rmse / n, n
+
+        if type_of_value == "m":
+            pass
+
+    # taken from https://stackoverflow.com/a/35611142/8086033
     def emsvd(self, utility_matrix, tol=1e-3, max_iter=None):
         """
         Approximate SVD on data with missing values via expectation-maximization
@@ -93,36 +129,30 @@ class FactorizationRecommender:
 
         return U, s, Vt, mu_hat
 
-    # taken from https://stackoverflow.com/a/35611142/8086033
-    def predict(self, rater_id, rated_id):
-        # go from id to index
-        rater_idx = self.rater_index_dict[int(rater_id)]
-        rated_idx = self.rated_index_dict[int(rated_id)]
-        # reconstruct the score from decomposed matrix
-        u_s_root = np.dot(self.U[rater_idx, :], self.s_root)  # (k,) array
-        s_root_v = np.dot(self.Vt[:, rated_idx], self.s_root)  # (k,1)
-        score = np.dot(u_s_root, s_root_v) + self.mu_hat[0, rated_idx]
-        return score
+    @staticmethod
+    def create_utility_matrix(_, data, value_col_name):
+        # not really optimized here but not a problem since we won't use it a lot
+        rater_list = data["rater"].tolist()
+        rated_list = data["rated"].tolist()
+        value_list = data[value_col_name].tolist()
+        rater_ids = list(set(data["rater"]))
+        rated_ids = list(set(data["rated"]))
 
-    def evaluate(self, test_data, type_of_value="r"):
+        rater_index_dict = {rater_ids[i]: i for i in range(len(rater_ids))}
+        pd_dict = {v_id: [np.nan for i in range(len(rater_ids))] for v_id in rated_ids}
+        for i in range(0, len(data)):
+            rater_id = rater_list[i]
+            rated_id = rated_list[i]
+            value = value_list[i]
+            pd_dict[rated_id][rater_index_dict[rater_id]] = value
+        utility_matrix = pd.DataFrame(pd_dict)
+        utility_matrix.index = rater_ids
 
-        if type_of_value == "r":
-            rmse = 0
-            n = 0
-            for idx, row in test_data.iterrows():
-
-                try:
-                    pred = self.predict(row["rater"], row["rated"])
-                    obs = row[type_of_value]
-                    rmse += abs(pred - obs)
-                    n += 1
-                except:
-                    pass
-                    # Other user never seen before
-            return rmse / n, n
-
-        if type_of_value == "m":
-            pass
+        rated_cols = list(utility_matrix.columns)
+        rated_index_dict = {rated_cols[i]: i for i in range(len(rated_cols))}
+        # rater_index gives us a mapping of rater_id to index of rater
+        # rated_index provides the same for rated
+        return utility_matrix, rater_index_dict, rated_index_dict
 
     def save(self, path):
         pass

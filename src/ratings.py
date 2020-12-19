@@ -1,6 +1,5 @@
 import os
 import pandas as pd
-import numpy as np
 import requests
 from tqdm import tqdm
 import sys
@@ -64,32 +63,6 @@ def train_test_split(
     train.to_csv(train_data_path, index=False)
     test.to_csv(test_data_path, index=False)
     return train, test
-
-
-# assume users are ordered and we start at 0 ?
-def create_utility_matrix(data, value_col_name):
-
-    rater_list = data["rater"].tolist()
-    rated_list = data["rated"].tolist()
-    value_list = data[value_col_name].tolist()
-    rater_ids = list(set(data["rater"]))
-    rated_ids = list(set(data["rated"]))
-
-    rater_index_dict = {rater_ids[i]: i for i in range(len(rater_ids))}
-    pd_dict = {v_id: [np.nan for i in range(len(rater_ids))] for v_id in rated_ids}
-    for i in range(0, len(data)):
-        rater_id = rater_list[i]
-        rated_id = rated_list[i]
-        value = value_list[i]
-        pd_dict[rated_id][rater_index_dict[rater_id]] = value
-    utility_matrix = pd.DataFrame(pd_dict)
-    utility_matrix.index = rater_ids
-
-    rated_cols = list(utility_matrix.columns)
-    rated_index_dict = {rated_cols[i]: i for i in range(len(rated_cols))}
-    # rater_index gives us a mapping of rater_id to index of rater
-    # rated_index provides the same for rated
-    return utility_matrix, rater_index_dict, rated_index_dict
 
 
 def matches_to_matches_triplet(data):

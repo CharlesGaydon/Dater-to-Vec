@@ -11,13 +11,11 @@ type_of_value = "r"  # "r" or "m"
 def main():
     train = pd.read_csv(config.train_data_path)
     test = pd.read_csv(config.test_data_path)
-    utility_matrix, rater_index_dict, rated_index_dict = create_utility_matrix(
-        train, type_of_value
-    )
 
-    fr = FactorizationRecommender(k)
-    fr.fit(utility_matrix, rater_index_dict, rated_index_dict)
-    rmse, n = fr.evaluate(test, type_of_value=type_of_value)
+    # add if for the type to evaluate here
+    recommender = FactorizationRecommender(k)
+    recommender.fit(train)
+    rmse, n = recommender.evaluate(test, type_of_value=type_of_value)
     print(f"RMSE is: {rmse} (n={n})")
 
 
