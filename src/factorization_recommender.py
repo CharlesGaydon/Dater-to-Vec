@@ -75,7 +75,7 @@ class FactorizationRecommender:
         v_prev = 0
 
         while not halt:
-            print(ii)
+
             # SVD on filled-in data
             U, s, Vt = svdmethod(Y_hat - mu_hat)
 
@@ -84,7 +84,6 @@ class FactorizationRecommender:
 
             # update bias parameter
             mu_hat = Y_hat.mean(axis=0, keepdims=1)
-            print(mu_hat.shape)
             # test convergence using relative change in trace norm
             v = s.sum()
             if ii >= max_iter or ((v - v_prev) / v_prev) < tol:
@@ -97,8 +96,8 @@ class FactorizationRecommender:
     # taken from https://stackoverflow.com/a/35611142/8086033
     def predict(self, rater_id, rated_id):
         # go from id to index
-        rater_idx = self.rater_index_dict[rater_id]
-        rated_idx = self.rated_index_dict[rated_id]
+        rater_idx = self.rater_index_dict[int(rater_id)]
+        rated_idx = self.rated_index_dict[int(rated_id)]
         # reconstruct the score from decomposed matrix
         u_s_root = np.dot(self.U[rater_idx, :], self.s_root)  # (k,) array
         s_root_v = np.dot(self.Vt[:, rated_idx], self.s_root)  # (k,1)
@@ -109,11 +108,18 @@ class FactorizationRecommender:
 
         if type_of_value == "r":
             rmse = 0
-            for row in test_data:
-                pred = self.predict(row[0], row[1])
-                obs = row[type_of_value]
-                rmse += (pred - obs) ** 2
-            return rmse / len(test_data)
+            n = 0
+            for idx, row in test_data.iterrows():
+
+                try:
+                    pred = self.predict(row["rater"], row["rated"])
+                    obs = row[type_of_value]
+                    rmse += abs(pred - obs)
+                    n += 1
+                except:
+                    pass
+                    # Other user never seen before
+            return rmse / n, n
 
         if type_of_value == "m":
             pass

@@ -102,7 +102,7 @@ def main():
         config.raw_data_path,
         config.train_data_path,
         config.test_data_path,
-        max_u_id=10000,
+        max_u_id=500,
     )
 
 
