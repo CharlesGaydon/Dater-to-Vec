@@ -18,4 +18,5 @@ dependencies:
   - flake8
   - pytest
   - requests
+  - gensim
   - virtualenv=20.0.33  # For compatibility with conda env; venv is called when using black!

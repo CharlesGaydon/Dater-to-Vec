@@ -1,14 +1,18 @@
-import argparse
+import ast
 import os
-import pandas as pd
-import requests
-from tqdm import tqdm
 import sys
+import argparse
+from tqdm import tqdm
+import requests
+import pandas as pd
+import numpy as np
+
+np.random.seed(0)
 
 sys.path.insert(0, "./src")
 from config import config
 
-MAX_ID_IN_DATASET = 135359
+MAX_ID_IN_DATASET = config.MAX_ID_IN_DATASET
 
 
 def download_data(data_url, raw_data_path, force_download=False):
@@ -19,7 +23,8 @@ def download_data(data_url, raw_data_path, force_download=False):
             f.write(r.content)
 
 
-def turn_ratings_into_matches(train, test, match_threshold=0.65):
+def turn_ratings_into_matches(train, test):
+    match_threshold = config.match_threshold
     match_threshold_in_ratings = train["r"].quantile(q=match_threshold)
     train = train.assign(m=1 * (train["r"].values >= match_threshold_in_ratings))
     test = test.assign(m=1 * (test["r"].values >= match_threshold_in_ratings))
@@ -46,11 +51,11 @@ def train_test_split(
     u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)
     test = pd.DataFrame(columns=ratings.columns)
     train = pd.DataFrame(columns=ratings.columns)
-    test_ratio = 0.2  # fraction of data to be used as test set.
+
     for u_id in tqdm(u):
         temp = ratings[ratings["rater"] == u_id]
         n = len(temp)
-        train_size = int((1 - test_ratio) * n)
+        train_size = int((1 - config.test_ratio) * n)
 
         dummy_train = temp.iloc[:train_size]
         dummy_test = temp.iloc[train_size:]
@@ -66,8 +71,15 @@ def train_test_split(
     return train, test
 
 
-def matches_to_matches_triplet(data):
-    pass
+def matches_to_matches_triplet(data_path, output_path):
+    df = pd.read_csv(data_path, dtype={"rated": str})  # rater, rated, r, m
+    # keep only matches
+    print(f"N : {df.shape[0]}")
+    df = df[df["m"] > 0]
+    print(f"N : {df.shape[0]} (matches only)")
+    # group rated id into a set
+    df = df.groupby("rater")[["rated"]].agg(list)
+    df.to_csv(output_path, index=False)
 
 
 def get_args():
@@ -81,15 +93,33 @@ def get_args():
     return parser
 
 
+def load_d2v_formated_data(data_path):
+    df = pd.read_csv(data_path)
+    df = df["rated"].map(ast.literal_eval)
+    return df
+
+
+def list_shuffler(x):
+    np.random.shuffle(x)
+    return x
+
+
 def main():
     args = get_args()
+
+    # download the data if not downloaded already
     download_data(config.raw_data_url, config.raw_data_path)
-    train, test = train_test_split(
+
+    # Keep last x% of ratings for each rater as test set.
+    train_test_split(
         config.raw_data_path,
         config.train_data_path,
         config.test_data_path,
         max_u_id=int(args.max_u_id),
     )
+
+    matches_to_matches_triplet(config.train_data_path, config.d2v_train_data_path)
+    matches_to_matches_triplet(config.test_data_path, config.d2v_test_data_path)
 
 
 if __name__ == "__main__":
