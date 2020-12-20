@@ -1,16 +1,48 @@
 import numpy as np
+from tqdm import tqdm
 
 
-class FactorizationRecommender:
-    def __init__(self, k):
+class AverageRecommender:
+    def __init__(self):
         self.mean_rater_rating = None
         self.mean_rated_rating = None
 
-    def fit(self, train_data):
-        pass
+        self.rater_index_dict = None
+        self.rated_index_dict = None
+
+    def fit(self, train_data, value_col_name):
+
+        # initialize the means arrays
+        self.mean_rater_rating = (
+            train_data.groupby("rater")[value_col_name].mean().reset_index()
+        )  # rater_id, mean_value
+        self.mean_rated_rating = (
+            train_data.groupby("rated")[value_col_name].mean().reset_index()
+        )  # rated_id, mean_value
+
+        # get the dictionnary id -> index
+        self.rater_index_dict = {
+            self.mean_rater_rating["rater"].loc[i]: i
+            for i in range(len(self.mean_rater_rating))
+        }
+        self.rated_index_dict = {
+            self.mean_rated_rating["rated"].loc[i]: i
+            for i in range(len(self.mean_rated_rating))
+        }
 
     def predict(self, rater_id, rated_id):
-        score = None
+
+        rater_idx = self.rater_index_dict[rater_id]
+        if rated_id not in self.rated_index_dict:
+            # Other user never seen before
+            return None
+
+        rated_idx = self.rated_index_dict[rated_id]
+        score = np.sqrt(
+            self.mean_rater_rating.iloc[rater_idx, 1]
+            * self.mean_rated_rating.iloc[rated_idx, 1]
+        )
+
         return score
 
     def evaluate(self, test_data, type_of_value="r"):
@@ -18,17 +50,15 @@ class FactorizationRecommender:
         if type_of_value == "r":
             rmse = 0
             n = 0
-            for idx, row in test_data.iterrows():
+            for idx, row in tqdm(test_data.iterrows()):
 
-                try:
-                    pred = self.predict(row["rater"], row["rated"])
+                pred = self.predict(row["rater"], row["rated"])
+                if pred is not None:
                     obs = row[type_of_value]
                     rmse += abs(pred - obs)
                     n += 1
-                except:
-                    pass
-                    # Other user never seen before
-            return rmse / n, n
+
+            return np.round(rmse / n, 3), n
 
         if type_of_value == "m":
             pass

@@ -1,3 +1,4 @@
+import argparse
 import os
 import pandas as pd
 import requests
@@ -69,13 +70,25 @@ def matches_to_matches_triplet(data):
     pass
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--max_u_id",
+        help="Whether to load saved weight or to start learning from scratch",
+        default=MAX_ID_IN_DATASET,
+    )
+    parser = parser.parse_args()
+    return parser
+
+
 def main():
+    args = get_args()
     download_data(config.raw_data_url, config.raw_data_path)
     train, test = train_test_split(
         config.raw_data_path,
         config.train_data_path,
         config.test_data_path,
-        max_u_id=500,
+        max_u_id=int(args.max_u_id),
     )
 
 
