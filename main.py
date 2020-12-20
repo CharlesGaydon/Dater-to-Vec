@@ -46,7 +46,7 @@ def main():
     elif args.reco == "d2v":
         train = load_d2v_formated_data(config.d2v_train_data_path)
         recommender = D2V_Recommender(**config.d2v_params)
-        recommender.fit(train)
+        recommender.fit_embeddings(train)
         recommender.save_wv(config.rated_embeddings_path)
         recommender.save_wv(config.rated_embeddings_path)
         # recommender.save()

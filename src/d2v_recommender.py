@@ -35,7 +35,7 @@ class D2V_Recommender:
             workers=self.workers,
         )
 
-    def fit(self, df):
+    def fit_embeddings(self, df):
         """
 
         :param df: a pd.Series of list of strings of rated_ids that were co-swiped
@@ -53,7 +53,25 @@ class D2V_Recommender:
         self.model = model
         self.wv = model.wv
 
+    def prepare_for_prediction(self, df):
+        """
+
+        :param df: a pd.Series of list of strings of rated_ids that were co-swiped
+        :return:
+        """
+
+        # save the average embedding of matched people for all raters
+
+        self.mean_embeddings = None
+
     def predict(self, u, v):
+        # get embedding of u
+
+        # get embedding of v
+
+        # get distance from one another
+
+        # create a score inversely proportional to the distance
         pass
 
     def evaluate(self, test_data):
