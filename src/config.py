@@ -50,6 +50,8 @@ class Config:
         self.rated_embeddings_path = self.data_folder / "models/rated.vectors"
         self.rater_embeddings_path = self.data_folder / "models/rater.vectors.npy"
 
+        self.data_dict_path = self.data_folder / "data_dict.pickle"
+
 
 project_absolute_root = (
     Path(inspect.getfile(inspect.currentframe())).absolute().parent.parent

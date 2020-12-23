@@ -53,9 +53,10 @@ def main():
         recommender = D2V_Recommender(**config.d2v_params)
 
         train = pd.read_csv(config.train_data_path)
+        test = pd.read_csv(config.test_data_path)
         d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
 
-        # # learn embeddings for rated users
+        # learn embeddings for rated users
         recommender.fit_rated_embeddings(
             d2v_train, save_path=config.rated_embeddings_path
         )
@@ -64,7 +65,11 @@ def main():
         # learn embeddings for raters as the mean of embeddings of those they matched with
         recommender.fit_rater_embeddings(train, save_path=config.rater_embeddings_path)
         recommender.load_rater_vec(config.rater_embeddings_path)
-        print(recommender.mean_embeddings.loc["1"])
+
+        recommender.prepare_X_y_dataset(
+            train, test, data_dict_path=config.data_dict_path
+        )
+        # recommender.fit_classifier()
 
 
 if __name__ == "__main__":
