@@ -47,6 +47,9 @@ def train_test_split(
     print("Train-Test splitting")
     ratings = pd.read_csv(raw_data_path, names=["rater", "rated", "r"])
 
+    # Shuffle to avoid bias of ordered rated users
+    ratings = ratings.sample(frac=1).reset_index(drop=True)
+
     # list of all raters, already integers in our dataset
     u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)
     test = pd.DataFrame(columns=ratings.columns)
@@ -63,6 +66,7 @@ def train_test_split(
         if turn_into_matches:
             dummy_train, dummy_test = turn_ratings_into_matches(dummy_train, dummy_test)
 
+        # TODO: not efficint. Optimize!
         test = pd.concat([test, dummy_test], ignore_index=True)
         train = pd.concat([train, dummy_train], ignore_index=True)
 
