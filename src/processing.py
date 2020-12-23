@@ -51,7 +51,7 @@ def train_test_split(
     u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)
     test = pd.DataFrame(columns=ratings.columns)
     train = pd.DataFrame(columns=ratings.columns)
-
+    # TODO: coulb be optimized with a groupby ?
     for u_id in tqdm(u):
         temp = ratings[ratings["rater"] == u_id]
         n = len(temp)
@@ -65,6 +65,10 @@ def train_test_split(
 
         test = pd.concat([test, dummy_test], ignore_index=True)
         train = pd.concat([train, dummy_train], ignore_index=True)
+
+    # save
+    train_data_path.parent.mkdir(parents=True, exist_ok=True)
+    test_data_path.parent.mkdir(parents=True, exist_ok=True)
 
     train.to_csv(train_data_path, index=False)
     test.to_csv(test_data_path, index=False)
