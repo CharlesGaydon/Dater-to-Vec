@@ -15,7 +15,6 @@ class Config:
         # inputs
         self.raw_data_url = "http://www.occamslab.com/petricek/data/ratings.dat"
         self.data_folder = abs_root / "data/"
-        self.raw_data_path = self.data_folder / "ratings.dat"
 
         # training
         self.test_ratio = 0.20  # fraction of data to be used as test set.
@@ -41,6 +40,9 @@ class Config:
 
             self.data_folder = self.data_folder / "dev/"
 
+            
+        self.raw_data_path = self.data_folder / "ratings.dat"
+
         self.train_data_path = self.data_folder / "matches_train.dat"
         self.test_data_path = self.data_folder / "matches_test.dat"
 
@@ -51,6 +53,9 @@ class Config:
         self.rater_embeddings_path = self.data_folder / "models/rater.vectors.npy"
 
         self.data_dict_path = self.data_folder / "data_dict.pickle"
+        
+        self.tmp_automl_path = self.data_folder / "tmp/automl_tmp_output"
+        self.output_automl_path = self.data_folder / "model/automl_classifier_output"
 
 
 project_absolute_root = (

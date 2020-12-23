@@ -1,9 +1,15 @@
 # custom ignore
 data/
 
-
-
-
+.bash_history
+.bashrc
+.conda/
+.gitconfig
+.jupyter/
+.local/
+.pylint.d/
+.python_history
+.vscode-server/
 
 
 # Byte-compiled / optimized / DLL files
