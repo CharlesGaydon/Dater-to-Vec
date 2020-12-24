@@ -7,6 +7,9 @@ import requests
 import pandas as pd
 import numpy as np
 
+from sklearn.model_selection import StratifiedShuffleSplit
+
+
 np.random.seed(0)
 
 sys.path.insert(0, "./src")
@@ -21,14 +24,6 @@ def download_data(data_url, raw_data_path, force_download=False):
         r = requests.get(data_url, allow_redirects=True)
         with open(raw_data_path, "wb") as f:
             f.write(r.content)
-
-
-def turn_ratings_into_matches(train, test):
-    match_threshold = config.match_threshold
-    match_threshold_in_ratings = train["r"].quantile(q=match_threshold)
-    train = train.assign(m=1 * (train["r"].values >= match_threshold_in_ratings))
-    test = test.assign(m=1 * (test["r"].values >= match_threshold_in_ratings))
-    return train, test
 
 
 def train_test_split(
@@ -46,37 +41,36 @@ def train_test_split(
     assert max_u_id <= MAX_ID_IN_DATASET
     print("Train-Test splitting")
     ratings = pd.read_csv(raw_data_path, names=["rater", "rated", "r"])
+    df = ratings[ratings["rater"]<=max_u_id]
+    
+    # set train/test split
+    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=0)
+    sss = sss.split(df, df["rater"])
+    train_idx, test_idx = list(sss)[0]
+    df_train = df.iloc[train_idx].set_index("rater")
+    df_test = df.iloc[test_idx].set_index("rater")
 
-    # Shuffle to avoid bias of ordered rated users
-    ratings = ratings.sample(frac=1).reset_index(drop=True)
+    # get the quantile for the raters
+    quantiles = df.groupby(df["rater"])["r"].apply(lambda x: np.quantile(x, q=config.match_threshold)).to_frame().reset_index()  # df with rater as index and quantile as value
+    quantiles.columns = ["rater","r_quantile"]
+    
+    # apply to get matches
+    df_train = pd.merge(df_train, quantiles, left_on=df_train.index, right_on=quantiles.rater).drop(columns=["key_0"])
+    df_train["m"] = 1.0 * (df_train["r"]>=df_train["r_quantile"])
 
-    # list of all raters, already integers in our dataset
-    u = range(1, min(MAX_ID_IN_DATASET, max_u_id) + 1)
-    test = pd.DataFrame(columns=ratings.columns)
-    train = pd.DataFrame(columns=ratings.columns)
-    # TODO: coulb be optimized with a groupby ?
-    for u_id in tqdm(u):
-        temp = ratings[ratings["rater"] == u_id]
-        n = len(temp)
-        train_size = int((1 - config.test_ratio) * n)
-
-        dummy_train = temp.iloc[:train_size]
-        dummy_test = temp.iloc[train_size:]
-
-        if turn_into_matches:
-            dummy_train, dummy_test = turn_ratings_into_matches(dummy_train, dummy_test)
-
-        # TODO: not efficint. Optimize!
-        test = pd.concat([test, dummy_test], ignore_index=True)
-        train = pd.concat([train, dummy_train], ignore_index=True)
+    df_test = pd.merge(df_test, quantiles, left_on=df_test.index, right_on=quantiles.rater).drop(columns=["key_0"])
+    df_test["m"] = 1.0 * (df_test["r"]>=df_test["r_quantile"])
+    
+    df_train = df_train[["rater","rated","r","m"]]
+    df_test = df_test[["rater","rated","r","m"]]
 
     # save
     train_data_path.parent.mkdir(parents=True, exist_ok=True)
     test_data_path.parent.mkdir(parents=True, exist_ok=True)
 
-    train.to_csv(train_data_path, index=False)
-    test.to_csv(test_data_path, index=False)
-    return train, test
+    df_train.to_csv(train_data_path, index=False)
+    df_test.to_csv(test_data_path, index=False)
+    return df_train, df_test
 
 
 def matches_to_matches_triplet(data_path, output_path):
