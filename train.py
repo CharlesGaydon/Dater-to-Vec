@@ -10,8 +10,10 @@ import pandas as pd
 from src.processing import load_d2v_formated_data
 
 
+# TODO: keep only the d2v recommender here
 def get_args():
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "--reco",
         help="Whether to load saved weight or to start learning from scratch",
@@ -23,6 +25,12 @@ def get_args():
         help="Whether to load saved weight or to start learning from scratch",
         default="r",
         choices=["r", "m"],
+    )
+    parser.add_argument(
+        "--resume_training",
+        help="Whether to resume to a previously trained w2v model",
+        default="n",
+        choices=["y", "n"],
     )
     parser = parser.parse_args()
     return parser
@@ -55,21 +63,32 @@ def main():
         train = pd.read_csv(config.train_data_path)
         test = pd.read_csv(config.test_data_path)
         d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
-
-        # learn embeddings for rated users
+        print("learn embeddings for rated users")
+        if args.resume_training == "y":
+            resume_training = True
+        else:
+            resume_training = False
         recommender.fit_rated_embeddings(
-            d2v_train, save_path=config.rated_embeddings_path
+            d2v_train,
+            config.w2v_model_path,
+            config.rated_embeddings_path,
+            resume_training=resume_training,
         )
         recommender.load_rated_vec(config.rated_embeddings_path)
 
-        # learn embeddings for raters as the mean of embeddings of those they matched with
+        print(
+            "Learn embeddings for raters as the mean of embeddings of those they matched with"
+        )
         recommender.fit_rater_embeddings(train, save_path=config.rater_embeddings_path)
         recommender.load_rater_vec(config.rater_embeddings_path)
-
+        print("Prepare training datasets")
         recommender.prepare_X_y_dataset(
             train, test, data_dict_path=config.data_dict_path
         )
-        # recommender.fit_classifier()
+        print("Fit classifier via automl")
+        recommender.fit_classifier(
+            config.data_dict_path, config.tmp_automl_path, config.output_automl_path
+        )
 
 
 if __name__ == "__main__":

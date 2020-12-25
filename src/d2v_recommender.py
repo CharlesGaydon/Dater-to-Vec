@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from src.processing import list_shuffler
+from autosklearn.classification import AutoSklearnClassifier
 
 np.random.seed(0)
 
@@ -42,12 +43,19 @@ class D2V_Recommender:
         )
         self.data_dict = None  # dict of arrays with X_train, X_test, y_train, y_test
 
-    def fit_rated_embeddings(self, d2v_train, save_path=False):
+    def fit_rated_embeddings(
+        self, d2v_train, w2v_model_path, rated_embeddings_path, resume_training=False
+    ):
         """
 
         :param d2v_train: a pd.Series of list of strings of rated_ids that were co-swiped
         :return:
         """
+
+        if resume_training:
+            self.load_w2v_model(w2v_model_path)
+            self.load_rated_vec(rated_embeddings_path)
+
         model = self.w2v_model
 
         if model.train_count == 0:
@@ -57,11 +65,17 @@ class D2V_Recommender:
             model.train(d2v_train.values, total_examples=model.corpus_count, epochs=1)
             d2v_train.apply(list_shuffler)  # inplace checked.
 
+            if epoch_ % 10 == 0:
+                print("Saving model weights and embeddings.")
+                self.w2v_model = model
+                self.wv = model.wv
+                self.save_rated_vec(rated_embeddings_path)
+                self.save_w2v_model(w2v_model_path)
+
         self.w2v_model = model
         self.wv = model.wv
-
-        if save_path:
-            self.save_rated_vec(save_path)
+        self.save_rated_vec(rated_embeddings_path)
+        self.save_w2v_model(w2v_model_path)
 
     def fit_rater_embeddings(self, train, save_path=False):
         """
@@ -118,6 +132,27 @@ class D2V_Recommender:
         if data_dict_path:
             self.save_data_dict(data_dict_path)
 
+    def fit_classifier(self, data_dict_path, tmp_automl_path, output_automl_path):
+        data_dict = self.load_data_dict(data_dict_path)
+        X_train = data_dict["X_train"]
+        #         X_test = data_dict["X_test"]
+        y_train = data_dict["y_train"]
+        #         y_test = data_dict["y_test"]
+
+        # Auto-ML
+        automl = AutoSklearnClassifier(
+            time_left_for_this_task=60 * 30,
+            per_run_time_limit=60,
+            tmp_folder=tmp_automl_path,
+            output_folder=output_automl_path,
+        )
+
+        automl.fit(X_train, y_train, dataset_name="d2v")
+
+        print(automl.show_models())
+
+        return automl
+
     def predict(self, u, v):
         # get embedding of u
 
@@ -150,6 +185,14 @@ class D2V_Recommender:
     def load_rated_vec(self, wordvectors_path):
         self.wv = KeyedVectors.load(str(wordvectors_path), mmap="r")
         return self.wv
+
+    def save_w2v_model(self, w2v_model_path):
+        w2v_model_path.parent.mkdir(parents=True, exist_ok=True)
+        self.w2v_model.save(str(w2v_model_path))
+
+    def load_w2v_model(self, w2v_model_path):
+        self.w2v_model = Word2Vec.load(str(w2v_model_path))
+        return self.w2v_model
 
     def save_rater_vec(self, rater_embeddings_path):
         # saving as a numpy array for later loading of embeddings
