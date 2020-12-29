@@ -11,6 +11,8 @@ import pandas as pd
 
 from src.processing import list_shuffler
 from autosklearn.classification import AutoSklearnClassifier
+from autosklearn.metrics import roc_auc
+
 
 np.random.seed(0)
 tqdm.pandas()
@@ -78,21 +80,21 @@ class D2V_Recommender:
         self.save_rated_vec(rated_embeddings_path)
         self.save_w2v_model(w2v_model_path)
 
-    def fit_rater_embeddings(self, train, save_path=False):
+    def fit_rater_embeddings(self, input_train, save_path=False):
         """
-
         :param df_: a pd.Series of list of strings of rated_ids that were co-swiped
         :return:
         """
-        df_ = train.copy()
-        df_ = df_[df_["m"] > 0]  # select only those who matched
+        A_col, B_col, m_col = input_train.columns
+        train_ = input_train.copy()
+        train_ = train_[train_[m_col] > 0]  # select only those who matched
 
         # save the average embedding of matched people for all raters
         # TODO: optimize in one operation
-        df_["rated_emb"] = df_["rated"].apply(lambda x: self.wv[str(x)])
-        df_ = df_.groupby("rater")["rated_emb"].apply(np.mean)
-        df_.index = df_.index.astype(str)
-        self.mean_embeddings = df_
+        train_[B_col] = train_[B_col].apply(lambda x: self.wv[str(x)])
+        train_ = train_.groupby("rater")[B_col].apply(np.mean)
+        train_.index = train_.index.astype(str)
+        self.mean_embeddings = train_
         if save_path:
             self.save_rater_vec(save_path)
 
@@ -116,6 +118,7 @@ class D2V_Recommender:
         )
         train_ = train_.dropna()
         X_train = train_[A_col].values
+        X_train = np.stack(X_train)
         y_train = train_[m_col].values
         del train_
         test_[A_col] = (
@@ -125,6 +128,7 @@ class D2V_Recommender:
         )
         test_ = test_.dropna()
         X_test = test_[A_col].values
+        X_test = np.stack(X_test)
         y_test = test_[m_col].values
         del test_
 
@@ -143,39 +147,24 @@ class D2V_Recommender:
         if data_dict_path:
             self.save_data_dict(data_dict_path)
 
-    def fit_classifier(self, data_dict_path, tmp_automl_path, output_automl_path):
-        data_dict = self.load_data_dict(data_dict_path)
-        X_train = data_dict["X_train"]
-        #         X_test = data_dict["X_test"]
-        y_train = data_dict["y_train"]
-        #         y_test = data_dict["y_test"]
-
-        # Auto-ML
-        automl = AutoSklearnClassifier(
-            time_left_for_this_task=60 * 30,
-            per_run_time_limit=60,
-            tmp_folder=tmp_automl_path,
-            output_folder=output_automl_path,
-        )
-
-        automl.fit(X_train, y_train, dataset_name="d2v")
-
-        print(automl.show_models())
-
-        return automl
-
     def predict(self, u, v):
         # get embedding of u
+        vec_A = self.get_single_rater_vec(u)
+        vec_B = self.get_single_rated_vec(v)
+        X_vec = vec_A.values - vec_B
+        pred = self.classifier.predict(X_vec)
+        return pred
 
-        # get embedding of v
+    def predict_proba(self, u, v):
+        # get embedding of u
+        vec_A = self.get_single_rater_vec(u)
+        vec_B = self.get_single_rated_vec(v)
+        X_vec = vec_A.values - vec_B
+        proba = self.classifier.predict_proba(X_vec)
+        return proba
 
-        # get distance from one another
-
-        # create a score inversely proportional to the distance
-        pass
-
-    def evaluate(self, test_data):
-        pass
+    def set_classifier(self, classifier):
+        self.classifier = classifier
 
     def get_single_rated_vec(self, rated_id):
 
