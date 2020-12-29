@@ -15,7 +15,7 @@ def get_args():
     parser.add_argument(
         "--resume_training",
         help="Whether to resume to a previously trained w2v model",
-        # default="y",
+        default="y",
         choices=["y", "n"],
     )
     parser.add_argument(
@@ -36,13 +36,14 @@ def main():
     if "1" in args.steps:
         print("learn embeddings for rated users")
         d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
-        resume_training = (args.resume_training == "y")
+        resume_training = args.resume_training == "y"
         recommender.fit_rated_embeddings(
             d2v_train,
             config.w2v_model_path,
             config.rated_embeddings_path,
             resume_training=resume_training,
         )
+        del d2v_train
     else:
         recommender.load_rated_vec(config.rated_embeddings_path)
     ## STEP 2

@@ -11,6 +11,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 
 np.random.seed(0)
+tqdm.pandas()
 sys.path.insert(0, "./src")
 from config import config
 
@@ -40,47 +41,57 @@ def train_test_split(
     assert max_u_id <= MAX_ID_IN_DATASET
     print("Train-Test splitting")
     ratings = pd.read_csv(raw_data_path, names=["rater", "rated", "r"])
-    df = ratings[ratings["rater"]<=max_u_id]
-    
+    date = ratings[ratings["rater"] <= max_u_id]
+
     # set train/test split
-    sss = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=0)
-    sss = sss.split(df, df["rater"])
-    train_idx, test_idx = list(sss)[0]
-    df_train = df.iloc[train_idx].set_index("rater")
-    df_test = df.iloc[test_idx].set_index("rater")
+    splitter = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=0)
+    splitter = splitter.split(date, date["rater"])
+    train_idx, test_idx = list(splitter)[0]
+    train = date.iloc[train_idx].set_index("rater")
+    test = date.iloc[test_idx].set_index("rater")
 
     # get the quantile for the raters
-    quantiles = df.groupby(df["rater"])["r"].apply(lambda x: np.quantile(x, q=config.match_threshold)).to_frame().reset_index()  # df with rater as index and quantile as value
-    quantiles.columns = ["rater","r_quantile"]
-    
-    # apply to get matches
-    df_train = pd.merge(df_train, quantiles, left_on=df_train.index, right_on=quantiles.rater).drop(columns=["key_0"])
-    df_train["m"] = 1.0 * (df_train["r"]>=df_train["r_quantile"])
+    quantiles = (
+        date.groupby(date["rater"])["r"]
+        .progress_apply(lambda x: np.quantile(x, q=config.match_threshold))
+        .to_frame()
+        .reset_index()
+    )  # df with rater as index and quantile as value
+    quantiles.columns = ["rater", "r_quantile"]
 
-    df_test = pd.merge(df_test, quantiles, left_on=df_test.index, right_on=quantiles.rater).drop(columns=["key_0"])
-    df_test["m"] = 1.0 * (df_test["r"]>=df_test["r_quantile"])
-    
-    df_train = df_train[["rater","rated","r","m"]]
-    df_test = df_test[["rater","rated","r","m"]]
+    # apply to get matches
+    train = pd.merge(
+        train, quantiles, left_on=train.index, right_on=quantiles.rater
+    ).drop(columns=["key_0"])
+    train["m"] = 1.0 * (train["r"] >= train["r_quantile"])
+
+    test = pd.merge(test, quantiles, left_on=test.index, right_on=quantiles.rater).drop(
+        columns=["key_0"]
+    )
+    test["m"] = 1.0 * (test["r"] >= test["r_quantile"])
+
+    train = train[["rater", "rated", "m"]]
+    test = test[["rater", "rated", "m"]]
 
     # save
     train_data_path.parent.mkdir(parents=True, exist_ok=True)
     test_data_path.parent.mkdir(parents=True, exist_ok=True)
 
-    df_train.to_csv(train_data_path, index=False)
-    df_test.to_csv(test_data_path, index=False)
-    return df_train, df_test
+    train.to_csv(train_data_path, index=False)
+    test.to_csv(test_data_path, index=False)
+    return train, test
 
 
 def matches_to_matches_triplet(data_path, output_path):
-    df = pd.read_csv(data_path, dtype={"rated": str})  # rater, rated, r, m
+    data = pd.read_csv(data_path, dtype={"rated": str})  # rater, rated, m
+    A_col, B_col, m_col = data.columns
     # keep only matches
-    print(f"N : {df.shape[0]}")
-    df = df[df["m"] > 0]
-    print(f"N : {df.shape[0]} (matches only)")
+    print(f"N : {data.shape[0]}")
+    data = data[data[m_col] > 0]
+    print(f"N : {data.shape[0]} (matches only)")
     # group rated id into a set
-    df = df.groupby("rater")[["rated"]].agg(list)
-    df.to_csv(output_path, index=False)
+    data = data.groupby(A_col)[[B_col]].agg(list)
+    data.to_csv(output_path, index=False)
 
 
 def get_args():

@@ -88,41 +88,49 @@ class D2V_Recommender:
         df_ = df_[df_["m"] > 0]  # select only those who matched
 
         # save the average embedding of matched people for all raters
+        # TODO: optimize in one operation
         df_["rated_emb"] = df_["rated"].apply(lambda x: self.wv[str(x)])
         df_ = df_.groupby("rater")["rated_emb"].apply(np.mean)
+        df_.index = df_.index.astype(str)
         self.mean_embeddings = df_
         if save_path:
             self.save_rater_vec(save_path)
 
     def prepare_X_y_dataset(self, train_, test_, data_dict_path=False):
+        """
+        :param train
+        """
+        A_col, B_col, m_col = train_.columns
 
-        train_["set"] = "train"
-        test_["set"] = "test"
-        data = pd.concat([train_, test_])  # we will ignore the index
-        print("concatenated")
+        def get_vec_diff(rater_rated):
+            rater, rated = rater_rated
+            vec1 = self.get_single_rater_vec(rater)
+            vec2 = self.get_single_rated_vec(rated)
+            if vec2 is not None:
+                return (vec1 - vec2)[0]
+            else:
+                return None
 
-        print(f"Train N={len(train_)} - Test N={len(test_)}")
-        assert len(data) == (len(train_) + len(test_))
-        a = data["rater"].progress_apply(self.get_single_rater_vec)
-        b = data["rated"].progress_apply(self.get_single_rated_vec)
-        # TODO: could be even further vectorized
-        data["vec_delta"] = a - b  # piecewise array operations
-        data = data[["vec_delta", "m", "set"]]
-        print("Got embeddings for x")
-        # remove rows with never seen rated user
-        print(f"Train data N={len(data)}")
-        data = data.dropna()
-        print(f"After skipping unseen rated users: N={len(data)}")
-        train_ = data[data["set"] == "train"]
-        test_ = data[data["set"] == "test"]
-        del data
-        X_train = np.stack(train_["vec_delta"].values)
-        y_train = train_["m"].values
+        train_[A_col] = train_[[A_col, B_col]].progress_apply(
+            lambda x: get_vec_diff(x), axis=1
+        )
+        train_ = train_.dropna()
+        X_train = train_[A_col].values
+        y_train = train_[m_col].values
         del train_
-        X_test = np.stack(test_["vec_delta"].values)
-        y_test = test_["m"].values
+        test_[A_col] = (
+            test_[[A_col, B_col]]
+            .progress_apply(lambda x: get_vec_diff(x), axis=1)
+            .values
+        )
+        test_ = test_.dropna()
+        X_test = test_[A_col].values
+        y_test = test_[m_col].values
         del test_
 
+        print(
+            f"After skipping unseen rated users: Train size = {y_train.shape} Test size = {y_test.shape}"
+        )
         data_dict = {
             "X_train": X_train,
             "X_test": X_test,
@@ -179,7 +187,7 @@ class D2V_Recommender:
 
     def get_single_rater_vec(self, rated_id):
         # Should always exist
-        return self.mean_embeddings.loc[str(rated_id)]
+        return self.mean_embeddings.loc[str(rated_id)].values
 
     def save_rated_vec(self, wordvectors_path):
         wordvectors_path.parent.mkdir(parents=True, exist_ok=True)
