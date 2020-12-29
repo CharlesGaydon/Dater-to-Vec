@@ -10,23 +10,26 @@ class AverageRecommender:
         self.rater_index_dict = None
         self.rated_index_dict = None
 
-    def fit(self, train_data, value_col_name):
-
+    def fit(self, train_data):
+        """
+        :param train_data: pd.DataFrame with columns id_A, id_B, rating.
+        """
+        A_col, B_col, R_col = train_data.columns
         # initialize the means arrays
         self.mean_rater_rating = (
-            train_data.groupby("rater")[value_col_name].mean().reset_index()
+            train_data.groupby(A_col)[R_col].mean().reset_index()
         )  # rater_id, mean_value
         self.mean_rated_rating = (
-            train_data.groupby("rated")[value_col_name].mean().reset_index()
+            train_data.groupby(B_col)[R_col].mean().reset_index()
         )  # rated_id, mean_value
 
         # get the dictionnary id -> index
         self.rater_index_dict = {
-            self.mean_rater_rating["rater"].loc[i]: i
+            self.mean_rater_rating[A_col].loc[i]: i
             for i in range(len(self.mean_rater_rating))
         }
         self.rated_index_dict = {
-            self.mean_rated_rating["rated"].loc[i]: i
+            self.mean_rated_rating[B_col].loc[i]: i
             for i in range(len(self.mean_rated_rating))
         }
 
@@ -45,20 +48,20 @@ class AverageRecommender:
 
         return score
 
-    def evaluate(self, test_data, type_of_value="r"):
+    def evaluate(self, test_data):
+        """
+        :param test_data: pd.DataFrame with columns id_A, id_B, rating.
+        """
+        A_col, B_col, R_col = test_data.columns
+        rmse = 0
+        n = 0
+        for idx, row in tqdm(test_data.iterrows()):
 
-        if type_of_value == "r":
-            rmse = 0
-            n = 0
-            for idx, row in tqdm(test_data.iterrows()):
+            pred = self.predict(row[A_col], row[B_col])
+            if pred is not None:
+                obs = row[R_col]
+                rmse += abs(pred - obs)
+                n += 1
 
-                pred = self.predict(row["rater"], row["rated"])
-                if pred is not None:
-                    obs = row[type_of_value]
-                    rmse += abs(pred - obs)
-                    n += 1
-
-            return np.round(rmse / n, 3), n
-
-        if type_of_value == "m":
-            pass
+        return np.round(rmse / n, 3), n
+    

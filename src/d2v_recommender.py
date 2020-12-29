@@ -4,7 +4,7 @@ import pickle
 from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 
-from tqdm import tqdm; tqdm.pandas();
+from tqdm import tqdm
 
 import numpy as np
 import pandas as pd
@@ -13,6 +13,7 @@ from src.processing import list_shuffler
 from autosklearn.classification import AutoSklearnClassifier
 
 np.random.seed(0)
+tqdm.pandas()
 
 
 class D2V_Recommender:
