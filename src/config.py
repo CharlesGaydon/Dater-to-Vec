@@ -2,7 +2,7 @@ import multiprocessing
 from pathlib import Path
 import inspect
 
-DEV_MODE = False
+DEV_MODE = True
 
 
 class Config:

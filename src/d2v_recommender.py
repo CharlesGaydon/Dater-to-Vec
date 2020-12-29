@@ -4,7 +4,7 @@ import pickle
 from gensim.models import Word2Vec
 from gensim.models import KeyedVectors
 
-from tqdm import tqdm
+from tqdm import tqdm; tqdm.pandas();
 
 import numpy as np
 import pandas as pd
@@ -93,32 +93,34 @@ class D2V_Recommender:
         if save_path:
             self.save_rater_vec(save_path)
 
-    def prepare_X_y_dataset(self, train, test, data_dict_path=False):
-        train_ = train.copy()
-        test_ = test.copy()
+    def prepare_X_y_dataset(self, train_, test_, data_dict_path=False):
+
         train_["set"] = "train"
         test_["set"] = "test"
         data = pd.concat([train_, test_])  # we will ignore the index
+        print("concatenated")
 
         print(f"Train N={len(train_)} - Test N={len(test_)}")
         assert len(data) == (len(train_) + len(test_))
-
+        a = data["rater"].progress_apply(self.get_single_rater_vec)
+        b = data["rated"].progress_apply(self.get_single_rated_vec)
         # TODO: could be even further vectorized
-        data["rater"] = data["rater"].apply(self.get_single_rater_vec)
-        data["rated"] = data["rated"].apply(self.get_single_rated_vec)
-        data["vec_delta"] = data["rater"] - data["rated"]  # piecewise array operations
+        data["vec_delta"] =  a - b  # piecewise array operations
         data = data[["vec_delta", "m", "set"]]
-
+        print("Got embeddings for x")
         # remove rows with never seen rated user
         print(f"Train data N={len(data)}")
         data = data.dropna()
         print(f"After skipping unseen rated users: N={len(data)}")
         train_ = data[data["set"] == "train"]
         test_ = data[data["set"] == "test"]
+        del data
         X_train = np.stack(train_["vec_delta"].values)
-        X_test = np.stack(test_["vec_delta"].values)
         y_train = train_["m"].values
+        del train_
+        X_test = np.stack(test_["vec_delta"].values)
         y_test = test_["m"].values
+        del test_
 
         data_dict = {
             "X_train": X_train,
