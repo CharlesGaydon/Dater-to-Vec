@@ -1,9 +1,7 @@
 import argparse
 
-from src.average_recommender import AverageRecommender
 from src.config import config
 from src.d2v_recommender import D2V_Recommender
-from src.factorization_recommender import FactorizationRecommender
 
 import pandas as pd
 
@@ -15,22 +13,16 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--reco",
-        help="Whether to load saved weight or to start learning from scratch",
-        default="d2v",
-        choices=["factor", "average", "d2v"],
-    )
-    parser.add_argument(
-        "--value_col_name",
-        help="Whether to load saved weight or to start learning from scratch",
-        default="r",
-        choices=["r", "m"],
-    )
-    parser.add_argument(
         "--resume_training",
         help="Whether to resume to a previously trained w2v model",
-        default="y",
+        # default="y",
         choices=["y", "n"],
+    )
+    parser.add_argument(
+        "--steps",
+        help="Steps (0, 1 or 2 e.g. '13') to compute, with 0=Word2Vec, 1=raters embedding, 2=training data preparation",
+        default="123",
+        choices=["1", "2", "3", "12", "13", "23", "123"],
     )
     parser = parser.parse_args()
     return parser
@@ -38,56 +30,35 @@ def get_args():
 
 def main():
     args = get_args()
-    if args.reco == "factor":
-        # Warning: this does not scale to the full dataset
-        train = pd.read_csv(config.train_data_path)
-        test = pd.read_csv(config.test_data_path)
-        # add if for the type to evaluate here
-        k = 7
-        recommender = FactorizationRecommender(k)
-        recommender.fit(train, args.value_col_name)
-        rmse, n = recommender.evaluate(test, type_of_value=args.value_col_name)
-        print(f"RMSE is: {rmse} (n={n})")
-
-    elif args.reco == "average":
-        train = pd.read_csv(config.train_data_path)
-        test = pd.read_csv(config.test_data_path)
-        recommender = AverageRecommender()
-        recommender.fit(train, args.value_col_name)
-        rmse, n = recommender.evaluate(test, type_of_value=args.value_col_name)
-        print(f"RMSE is: {rmse} (n={n})")
-
-    elif args.reco == "d2v":
-        recommender = D2V_Recommender(**config.d2v_params)
-
-        train = pd.read_csv(config.train_data_path)
-        test = pd.read_csv(config.test_data_path)
-        d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
+    recommender = D2V_Recommender(**config.d2v_params)
+    train = pd.read_csv(config.train_data_path)
+    ## STEP 1
+    if "1" in args.steps:
         print("learn embeddings for rated users")
-        if args.resume_training == "y":
-            resume_training = True
-        else:
-            resume_training = False
+        d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
+        resume_training = (args.resume_training == "y")
         recommender.fit_rated_embeddings(
             d2v_train,
             config.w2v_model_path,
             config.rated_embeddings_path,
             resume_training=resume_training,
         )
+    else:
         recommender.load_rated_vec(config.rated_embeddings_path)
-
+    ## STEP 2
+    if "2" in args.steps:
         print(
             "Learn embeddings for raters as the mean of embeddings of those they matched with"
         )
         recommender.fit_rater_embeddings(train, save_path=config.rater_embeddings_path)
+    else:
         recommender.load_rater_vec(config.rater_embeddings_path)
+    ## STEP 3
+    if "3" in args.steps:
         print("Prepare training datasets")
+        test = pd.read_csv(config.test_data_path)
         recommender.prepare_X_y_dataset(
             train, test, data_dict_path=config.data_dict_path
-        )
-        print("Fit classifier via automl")
-        recommender.fit_classifier(
-            config.data_dict_path, config.tmp_automl_path, config.output_automl_path
         )
 
 

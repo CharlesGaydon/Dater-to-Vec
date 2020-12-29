@@ -11,7 +11,6 @@ from sklearn.model_selection import StratifiedShuffleSplit
 
 
 np.random.seed(0)
-
 sys.path.insert(0, "./src")
 from config import config
 
@@ -113,6 +112,7 @@ def main():
     download_data(config.raw_data_url, config.raw_data_path)
 
     # Keep last x% of ratings for each rater as test set.
+    print(f"Processing N={args.max_u_id} records.")
     train_test_split(
         config.raw_data_path,
         config.train_data_path,

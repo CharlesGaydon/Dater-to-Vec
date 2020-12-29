@@ -106,7 +106,7 @@ class D2V_Recommender:
         a = data["rater"].progress_apply(self.get_single_rater_vec)
         b = data["rated"].progress_apply(self.get_single_rated_vec)
         # TODO: could be even further vectorized
-        data["vec_delta"] =  a - b  # piecewise array operations
+        data["vec_delta"] = a - b  # piecewise array operations
         data = data[["vec_delta", "m", "set"]]
         print("Got embeddings for x")
         # remove rows with never seen rated user
