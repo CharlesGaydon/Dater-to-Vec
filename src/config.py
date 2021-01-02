@@ -2,7 +2,7 @@ import multiprocessing
 from pathlib import Path
 import inspect
 
-DEV_MODE = True
+DEV_MODE = False
 
 
 class Config:
@@ -24,18 +24,18 @@ class Config:
         if DEV_MODE:
 
             self.d2v_params = {
-                "embedding_size": 50,
+                "embedding_size": 100,
                 "window": 3,
                 "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 2,
-                "num_epochs": 15,
+                "num_epochs": 300,
             }
 
             self.data_folder = self.data_folder / "dev/"
         else:  # PROD MODE
 
             self.d2v_params = {
-                "embedding_size": 100,
+                "embedding_size": 300,
                 "window": 3,
                 "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 1,
