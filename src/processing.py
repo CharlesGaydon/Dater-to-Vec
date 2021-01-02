@@ -30,7 +30,7 @@ def train_test_split(
     raw_data_path,
     train_data_path,
     test_data_path,
-    max_u_id=MAX_ID_IN_DATASET,
+    max_id=MAX_ID_IN_DATASET,
     turn_into_matches=True,
 ):
     """
@@ -38,10 +38,10 @@ def train_test_split(
     :param nrows: use None for all
     :return:
     """
-    assert max_u_id <= MAX_ID_IN_DATASET
+    assert max_id <= MAX_ID_IN_DATASET
     print("Train-Test splitting")
     ratings = pd.read_csv(raw_data_path, names=["rater", "rated", "r"])
-    date = ratings[ratings["rater"] <= max_u_id]
+    date = ratings[ratings["rater"] <= max_id]
 
     # set train/test split
     splitter = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=0)
@@ -94,17 +94,6 @@ def matches_to_matches_triplet(data_path, output_path):
     data.to_csv(output_path, index=False)
 
 
-def get_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--max_u_id",
-        help="Whether to load saved weight or to start learning from scratch",
-        default=MAX_ID_IN_DATASET,
-    )
-    parser = parser.parse_args()
-    return parser
-
-
 def load_d2v_formated_data(data_path):
     df = pd.read_csv(data_path)
     df = df["rated"].map(ast.literal_eval)
@@ -116,6 +105,17 @@ def list_shuffler(x):
     return x
 
 
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--max_id",
+        help="Whether to load saved weight or to start learning from scratch",
+        default=MAX_ID_IN_DATASET,
+    )
+    parser = parser.parse_args()
+    return parser
+
+
 def main():
     args = get_args()
 
@@ -123,12 +123,12 @@ def main():
     download_data(config.raw_data_url, config.raw_data_path)
 
     # Keep last x% of ratings for each rater as test set.
-    print(f"Processing N={args.max_u_id} records.")
+    print(f"Processing N={args.max_id} records.")
     train_test_split(
         config.raw_data_path,
         config.train_data_path,
         config.test_data_path,
-        max_u_id=int(args.max_u_id),
+        max_id=int(args.max_id),
     )
 
     matches_to_matches_triplet(config.train_data_path, config.d2v_train_data_path)

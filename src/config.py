@@ -28,7 +28,7 @@ class Config:
                 "window": 3,
                 "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 2,
-                "num_epochs": 12,
+                "num_epochs": 15,
             }
 
             self.data_folder = self.data_folder / "dev/"

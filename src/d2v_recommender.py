@@ -1,8 +1,11 @@
 import multiprocessing
 import pickle
 
-from gensim.models import Word2Vec
-from gensim.models import KeyedVectors
+from gensim.models import Word2Vec, KeyedVectors
+from gensim.models.callbacks import CallbackAny2Vec
+import logging
+
+logging.getLogger("gensim").setLevel(logging.WARNING)
 
 from tqdm import tqdm
 
@@ -18,6 +21,53 @@ np.random.seed(0)
 tqdm.pandas()
 
 
+class LossLogger(CallbackAny2Vec):
+    """Output loss at each epoch"""
+
+    def __init__(self):
+        self.epoch = 1
+        self.losses = []
+
+    def on_epoch_begin(self, model):
+        print(f"Epoch: {self.epoch}", end="\t")
+
+    def on_epoch_end(self, model):
+        loss = model.get_latest_training_loss()
+        self.losses.append(loss)
+        print(f"  Loss: {loss}")
+        if self.epoch == 1:
+            print("Loss: {}".format(loss))
+        else:
+            print("Loss: {}".format(loss - self.loss_previous_step))
+        self.epoch += 1
+        self.loss_previous_step = loss
+
+
+class ModelSaver(CallbackAny2Vec):
+    """Output loss at each epoch"""
+
+    def __init__(
+        self, d2v_object, rated_embeddings_path, w2v_model_path, log_frequency=10
+    ):
+        self.epoch = 1
+        self.log_frequency = log_frequency
+        self.d2v_object = d2v_object
+        self.rated_embeddings_path = rated_embeddings_path
+        self.w2v_model_path = w2v_model_path
+
+    def on_epoch_begin(self, model):
+        pass
+
+    def on_epoch_end(self, model):
+        if self.epoch % self.log_frequency == 0:
+            print("Saving model weights and embeddings.")
+            self.d2v_object.w2v_model = model
+            self.d2v_object.wv = model.wv
+            self.d2v_object.save_rated_vec(self.rated_embeddings_path)
+            self.d2v_object.save_w2v_model(self.w2v_model_path)
+        self.epoch += 1
+
+
 class D2V_Recommender:
     def __init__(
         self,
@@ -26,19 +76,14 @@ class D2V_Recommender:
         min_count=1,
         workers=multiprocessing.cpu_count() - 1,
         num_epochs=50,
+        sample=0,  # do not downsample
     ):
         self.embedding_size = embedding_size
         self.window = window
         self.min_count = min_count
         self.workers = workers
         self.num_epochs = num_epochs
-
-        self.w2v_model = Word2Vec(
-            size=self.embedding_size,
-            window=self.window,
-            min_count=self.min_count,
-            workers=self.workers,
-        )
+        self.sample = sample
 
         self.wv = None  # access to embeddings with self.wv["rated_user_id"]
         self.mean_embeddings = (
@@ -54,26 +99,35 @@ class D2V_Recommender:
         :param d2v_train: a pd.Series of list of strings of rated_ids that were co-swiped
         :return:
         """
+        # Prepare the data iterator
+        d2v_train_iterator = self.build_data_iterator(d2v_train)
 
+        # Initiate the model
+        loss_logger = LossLogger()
+        model_saver = ModelSaver(self, rated_embeddings_path, w2v_model_path)
+        self.w2v_model = Word2Vec(
+            size=self.embedding_size,
+            window=self.window,
+            min_count=self.min_count,
+            workers=self.workers,
+            sample=self.sample,
+            callbacks=[loss_logger, model_saver],
+        )
+        model = self.w2v_model
         if resume_training:
+            print("Resuming previous training.")
             self.load_w2v_model(w2v_model_path)
             self.load_rated_vec(rated_embeddings_path)
-
-        model = self.w2v_model
-
         if model.train_count == 0:
-            model.build_vocab(d2v_train.values)
+            model.build_vocab(d2v_train_iterator)
 
-        for epoch_ in tqdm(range(self.num_epochs)):
-            model.train(d2v_train.values, total_examples=model.corpus_count, epochs=1)
-            d2v_train.apply(list_shuffler)  # inplace checked.
-
-            if epoch_ % 10 == 0:
-                print("Saving model weights and embeddings.")
-                self.w2v_model = model
-                self.wv = model.wv
-                self.save_rated_vec(rated_embeddings_path)
-                self.save_w2v_model(w2v_model_path)
+        # train and save final model
+        model.train(
+            d2v_train_iterator,
+            total_examples=model.corpus_count,
+            epochs=self.num_epochs,
+            compute_loss=True,
+        )
 
         self.w2v_model = model
         self.wv = model.wv
@@ -92,8 +146,9 @@ class D2V_Recommender:
         # save the average embedding of matched people for all raters
         # TODO: optimize in one operation
         train_[B_col] = train_[B_col].apply(lambda x: self.wv[str(x)])
-        train_ = train_.groupby("rater")[B_col].apply(np.mean)
+        train_ = train_.groupby(A_col)[B_col].apply(np.mean)
         train_.index = train_.index.astype(str)
+        train_ = train_.to_frame()
         self.mean_embeddings = train_
         if save_path:
             self.save_rater_vec(save_path)
@@ -162,6 +217,36 @@ class D2V_Recommender:
         X_vec = vec_A.values - vec_B
         proba = self.classifier.predict_proba(X_vec)
         return proba
+
+    def build_data_iterator(self, data):
+        class shuffle_generator:
+            def __init__(self, data):
+                self.data = data
+
+            def __iter__(self):
+                self.data.apply(np.random.shuffle)
+                return shuffle_generator_iter(self.data)
+
+        class shuffle_generator_iter:
+            def __init__(self, data):
+                self.i = 0
+                self.data = data
+                self.data_length = len(data)
+
+            def __iter__(self):
+                # Iterators are iterables too.
+                # Adding this functions to make them so.
+                return self
+
+            def __next__(self):
+                if self.i < self.data_length:
+                    i = self.i
+                    self.i += 1
+                    return self.data[i]  # a list
+                else:
+                    raise StopIteration()
+
+        return shuffle_generator(data)
 
     def set_classifier(self, classifier):
         self.classifier = classifier

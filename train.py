@@ -53,6 +53,7 @@ def main():
         )
         recommender.fit_rater_embeddings(train, save_path=config.rater_embeddings_path)
     else:
+        print("Loading: rater vectors.")
         recommender.load_rater_vec(config.rater_embeddings_path)
     ## STEP 3
     if "3" in args.steps:
