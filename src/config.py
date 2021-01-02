@@ -37,9 +37,9 @@ class Config:
             self.d2v_params = {
                 "embedding_size": 200,
                 "window": 5,
-                "min_count": 1,
+                "min_count": 3,
                 "workers": multiprocessing.cpu_count() - 1,
-                "num_epochs": 92,  #  90 seems a minimum
+                "num_epochs": 92,
             }
             self.data_folder = self.data_folder / "prod/"
 

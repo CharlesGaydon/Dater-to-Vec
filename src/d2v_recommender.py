@@ -5,7 +5,7 @@ from gensim.models import Word2Vec, KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
 import logging
 
-logging.getLogger("gensim").setLevel(logging.INFO)
+logging.getLogger("gensim").setLevel(logging.WARNING)
 
 from tqdm import tqdm
 
@@ -145,7 +145,10 @@ class D2V_Recommender:
 
         # save the average embedding of matched people for all raters
         # TODO: optimize in one operation
-        train_[B_col] = train_[B_col].apply(lambda x: self.wv[str(x)])
+        train_[B_col] = train_[B_col].apply(self.get_single_rated_vec)
+        train_ = train_.dropna(
+            subset=[B_col]
+        )  # avoid considering the rated people appearing only once.
         train_ = train_.groupby(A_col)[B_col].apply(np.mean)
         train_.index = train_.index.astype(str)
         train_ = train_.to_frame()
