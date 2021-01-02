@@ -5,7 +5,7 @@ from gensim.models import Word2Vec, KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
 import logging
 
-logging.getLogger("gensim").setLevel(logging.WARNING)
+logging.getLogger("gensim").setLevel(logging.INFO)
 
 from tqdm import tqdm
 
@@ -46,7 +46,7 @@ class ModelSaver(CallbackAny2Vec):
     """Output loss at each epoch"""
 
     def __init__(
-        self, d2v_object, rated_embeddings_path, w2v_model_path, log_frequency=10
+        self, d2v_object, rated_embeddings_path, w2v_model_path, log_frequency=5
     ):
         self.epoch = 1
         self.log_frequency = log_frequency
@@ -115,11 +115,11 @@ class D2V_Recommender:
         model = self.w2v_model
         if resume_training:
             print("Resuming previous training.")
-            self.load_w2v_model(w2v_model_path)
-            self.load_rated_vec(rated_embeddings_path)
-        if model.train_count == 0:
+            model = self.load_w2v_model(w2v_model_path)
+            model.build_vocab(d2v_train_iterator, update=True)
+        elif model.train_count == 0:
             model.build_vocab(d2v_train_iterator)
-
+        print("here")
         # train and save final model
         model.train(
             d2v_train_iterator,
@@ -138,6 +138,7 @@ class D2V_Recommender:
         :param df_: a pd.Series of list of strings of rated_ids that were co-swiped
         :return:
         """
+        print(input_train.columns)
         A_col, B_col, m_col = input_train.columns
         train_ = input_train.copy()
         train_ = train_[train_[m_col] > 0]  # select only those who matched
@@ -275,7 +276,7 @@ class D2V_Recommender:
         self.w2v_model.save(str(w2v_model_path))
 
     def load_w2v_model(self, w2v_model_path):
-        self.w2v_model = Word2Vec.load(str(w2v_model_path))
+        self.w2v_model = Word2Vec.load(str(w2v_model_path), mmap="r")
         return self.w2v_model
 
     def save_rater_vec(self, rater_embeddings_path):

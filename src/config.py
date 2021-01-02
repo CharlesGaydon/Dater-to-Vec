@@ -28,18 +28,18 @@ class Config:
                 "window": 3,
                 "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 2,
-                "num_epochs": 300,
+                "num_epochs": 50,
             }
 
             self.data_folder = self.data_folder / "dev/"
         else:  # PROD MODE
 
             self.d2v_params = {
-                "embedding_size": 300,
-                "window": 3,
+                "embedding_size": 200,
+                "window": 5,
                 "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 1,
-                "num_epochs": 625,  # would last around 2 hours.
+                "num_epochs": 92,  #  90 seems a minimum
             }
             self.data_folder = self.data_folder / "prod/"
 
@@ -49,9 +49,11 @@ class Config:
         self.d2v_train_data_path = self.data_folder / "matches_train_for_d2v.dat"
         self.d2v_test_data_path = self.data_folder / "matches_test_for_d2v.dat"
 
-        self.rated_embeddings_path = self.data_folder / "models/rated.vectors"
-        self.w2v_model_path = self.data_folder / "models/w2v.model"
-        self.rater_embeddings_path = self.data_folder / "models/rater.vectors.npy"
+        self.rated_embeddings_path = self.data_folder / "models/vectors/rated.vectors"
+        self.w2v_model_path = self.data_folder / "models/word_2_vec/model"
+        self.rater_embeddings_path = (
+            self.data_folder / "models/vectors/rater.vectors.npy"
+        )
 
         self.data_dict_path = self.data_folder / "data_dict.pickle"
 
