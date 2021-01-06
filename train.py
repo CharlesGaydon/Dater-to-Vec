@@ -1,10 +1,18 @@
-import argparse
-
 from src.config import config
-from src.d2v_recommender import D2V_Recommender
+import logging
 
+config.logs_output_path.parent.mkdir(parents=True, exist_ok=True)
+logging.basicConfig(
+    filename=config.logs_output_path,
+    format="%(asctime)s:%(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    level=logging.INFO,
+)
+
+import argparse
 import pandas as pd
 
+from src.d2v_recommender import D2V_Recommender
 from src.processing import load_d2v_formated_data
 
 
@@ -34,7 +42,7 @@ def main():
     train = pd.read_csv(config.train_data_path)
     ## STEP 1
     if "1" in args.steps:
-        print("learn embeddings for rated users")
+        logging.info("Larn embeddings for rated users")
         d2v_train = load_d2v_formated_data(config.d2v_train_data_path)
         resume_training = args.resume_training == "y"
         recommender.fit_rated_embeddings(
@@ -48,16 +56,16 @@ def main():
         recommender.load_rated_vec(config.rated_embeddings_path)
     ## STEP 2
     if "2" in args.steps:
-        print(
+        logging.info(
             "Learn embeddings for raters as the mean of embeddings of those they matched with"
         )
         recommender.fit_rater_embeddings(train, save_path=config.rater_embeddings_path)
     else:
-        print("Loading: rater vectors.")
+        logging.info("Loading: rater vectors.")
         recommender.load_rater_vec(config.rater_embeddings_path)
     ## STEP 3
     if "3" in args.steps:
-        print("Prepare training datasets")
+        logging.info("Prepare training datasets")
         test = pd.read_csv(config.test_data_path)
         recommender.prepare_X_y_dataset(
             train, test, data_dict_path=config.data_dict_path

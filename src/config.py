@@ -1,6 +1,7 @@
 import multiprocessing
 from pathlib import Path
 import inspect
+from datetime import datetime
 
 DEV_MODE = False
 
@@ -16,6 +17,7 @@ class Config:
         self.raw_data_url = "http://www.occamslab.com/petricek/data/ratings.dat"
         self.data_folder = abs_root / "data/"
         self.raw_data_path = self.data_folder / "ratings.dat"
+        self.logs_output_path = self.abs_root / "logs/"
 
         # training
         self.test_ratio = 0.10  # fraction of data to be used as test set.
@@ -32,6 +34,7 @@ class Config:
             }
 
             self.data_folder = self.data_folder / "dev/"
+            self.logs_output_path = self.logs_output_path / "dev/"
         else:  # PROD MODE
 
             self.d2v_params = {
@@ -42,6 +45,10 @@ class Config:
                 "num_epochs": 92,
             }
             self.data_folder = self.data_folder / "prod/"
+            self.logs_output_path = self.logs_output_path / "prod/"
+
+        now = datetime.now().strftime("%m-%d-%Y_%H:%M:%S")
+        self.logs_output_path = self.logs_output_path / f"train_log_{now}"
 
         self.train_data_path = self.data_folder / "matches_train.dat"
         self.test_data_path = self.data_folder / "matches_test.dat"

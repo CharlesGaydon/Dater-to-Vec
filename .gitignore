@@ -1,6 +1,6 @@
 # custom ignore
 data/
-
+logs/
 .bash_history
 .bashrc
 .conda/

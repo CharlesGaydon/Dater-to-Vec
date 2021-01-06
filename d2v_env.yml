@@ -9,6 +9,7 @@ dependencies:
   - pandas
   - scipy
   - matplotlib
+  - seaborn
   - pip
   - keras
   - tqdm

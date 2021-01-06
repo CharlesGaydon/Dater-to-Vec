@@ -1,11 +1,17 @@
 import multiprocessing
 import pickle
+import logging
+
+logger = logging.getLogger(__name__)
 
 from gensim.models import Word2Vec, KeyedVectors
 from gensim.models.callbacks import CallbackAny2Vec
-import logging
 
-logging.getLogger("gensim").setLevel(logging.WARNING)
+
+logging.getLogger("gensim").setLevel(
+    logging.WARNING
+)  # avoid seeing all logs from gensim.
+
 
 from tqdm import tqdm
 
@@ -28,16 +34,15 @@ class LossLogger(CallbackAny2Vec):
         self.epoch = 1
         self.losses = []
 
-    def on_epoch_begin(self, model):
-        print(f"Epoch: {self.epoch}", end="\t")
-
     def on_epoch_end(self, model):
         loss = model.get_latest_training_loss()
         self.losses.append(loss)
         if self.epoch == 1:
-            print("Loss: {}".format(loss))
+            logger.info(f"Epoch: {self.epoch}    Loss: {loss}")
         else:
-            print("Loss: {}".format(loss - self.loss_previous_step))
+            logger.info(
+                f"Epoch: {self.epoch}    Loss: {loss - self.loss_previous_step}"
+            )
         self.epoch += 1
         self.loss_previous_step = loss
 
@@ -59,7 +64,7 @@ class ModelSaver(CallbackAny2Vec):
 
     def on_epoch_end(self, model):
         if self.epoch % self.log_frequency == 0:
-            print("Saving model weights and embeddings.")
+            logger.info("Saving model weights and embeddings.")
             self.d2v_object.w2v_model = model
             self.d2v_object.wv = model.wv
             self.d2v_object.save_rated_vec(self.rated_embeddings_path)
@@ -114,12 +119,12 @@ class D2V_Recommender:
         )
         model = self.w2v_model
         if resume_training:
-            print("Resuming previous training.")
+            logger.info("Resuming previous training.")
             model = self.load_w2v_model(w2v_model_path)
             model.build_vocab(d2v_train_iterator, update=True)
         elif model.train_count == 0:
             model.build_vocab(d2v_train_iterator)
-        print("here")
+
         # train and save final model
         model.train(
             d2v_train_iterator,
@@ -138,7 +143,6 @@ class D2V_Recommender:
         :param df_: a pd.Series of list of strings of rated_ids that were co-swiped
         :return:
         """
-        print(input_train.columns)
         A_col, B_col, m_col = input_train.columns
         train_ = input_train.copy()
         train_ = train_[train_[m_col] > 0]  # select only those who matched
@@ -166,7 +170,7 @@ class D2V_Recommender:
             rater, rated = rater_rated
             vec1 = self.get_single_rater_vec(rater)
             vec2 = self.get_single_rated_vec(rated)
-            if vec2 is not None:
+            if vec1 is not None and vec2 is not None:
                 return (vec1 - vec2)[0]
             else:
                 return None
@@ -190,7 +194,7 @@ class D2V_Recommender:
         y_test = test_[m_col].values
         del test_
 
-        print(
+        logger.info(
             f"After skipping unseen rated users: Train size = {y_train.shape} Test size = {y_test.shape}"
         )
         data_dict = {
@@ -264,7 +268,11 @@ class D2V_Recommender:
 
     def get_single_rater_vec(self, rated_id):
         # Should always exist
-        return self.mean_embeddings.loc[str(rated_id)].values
+        try:
+            return self.mean_embeddings.loc[str(rated_id)].values
+        except KeyError:
+            # The rater user did not have rated people with the sufficient number of occurence (default: >3)
+            return None
 
     def save_rated_vec(self, wordvectors_path):
         wordvectors_path.parent.mkdir(parents=True, exist_ok=True)
