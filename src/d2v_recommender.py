@@ -1,4 +1,5 @@
 import multiprocessing
+
 import pickle
 import logging
 
@@ -171,13 +172,16 @@ class D2V_Recommender:
             vec1 = self.get_single_rater_vec(rater)
             vec2 = self.get_single_rated_vec(rated)
             if vec1 is not None and vec2 is not None:
-                return (vec1 - vec2)[0]
+                diff = (vec1 - vec2)[0]
+                dist = np.sqrt(np.sum(diff * diff, axis=0))
+                return dist
             else:
                 return None
 
         train_[A_col] = train_[[A_col, B_col]].progress_apply(
             lambda x: get_vec_diff(x), axis=1
         )
+        logger.info("Finished getting distance for test dataset")
         train_ = train_.dropna()
         X_train = train_[A_col].values
         X_train = np.stack(X_train)
@@ -188,6 +192,7 @@ class D2V_Recommender:
             .progress_apply(lambda x: get_vec_diff(x), axis=1)
             .values
         )
+        logger.info("Finished getting distance for test dataset")
         test_ = test_.dropna()
         X_test = test_[A_col].values
         X_test = np.stack(X_test)

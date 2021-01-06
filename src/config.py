@@ -22,6 +22,9 @@ class Config:
         # training
         self.test_ratio = 0.10  # fraction of data to be used as test set.
         self.match_threshold = 0.85  # 1-match_threshold best rated others are selected, plus others with equal score.
+        self.num_training_examples = (
+            200000  # number of training example to learn from with LGBM
+        )
 
         if DEV_MODE:
 
@@ -42,7 +45,7 @@ class Config:
                 "window": 5,
                 "min_count": 3,
                 "workers": multiprocessing.cpu_count() - 1,
-                "num_epochs": 92,
+                "num_epochs": 100,
             }
             self.data_folder = self.data_folder / "prod/"
             self.logs_output_path = self.logs_output_path / "prod/"

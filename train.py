@@ -67,8 +67,11 @@ def main():
     if "3" in args.steps:
         logging.info("Prepare training datasets")
         test = pd.read_csv(config.test_data_path)
+        # NB: we do not need the full training data as it is very simple - we will a simple LGBM on a 1D X_train!
         recommender.prepare_X_y_dataset(
-            train, test, data_dict_path=config.data_dict_path
+            train.iloc[: config.num_training_examples, :],
+            test,
+            data_dict_path=config.data_dict_path,
         )
 
 
