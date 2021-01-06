@@ -10,6 +10,8 @@ logs/
 .pylint.d/
 .python_history
 .vscode-server/
+.vscode/
+.idea/
 
 
 # Byte-compiled / optimized / DLL files
