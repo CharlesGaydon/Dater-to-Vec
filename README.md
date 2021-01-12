@@ -1,9 +1,8 @@
 # Dater-to-Vec
 > **Collaborative filtering in dating : a NLP-based user embedding approach inspired from Tinder's TinVec.**
 
-**or**
+or in simpler terms: "Predicting who a dating app user will _like_ or _pass_ based on the dating preferences of the whole users community"
 
-> **How one can predict who a dating app user will _like_ or _pass_ based on the dating preferences of the whole user community.**
 ___
 - [Dater-to-Vec](#dater-to-vec)
   - [An Overview of TinVec](#an-overview-of-tinvec)
@@ -13,8 +12,9 @@ ___
     - [Embedding raters - *Who do you like?*](#embedding-raters---who-do-you-like)
     - [Predicting affinity between two users - *Are they your type?*](#predicting-affinity-between-two-users---are-they-your-type)
   - [Results](#results)
-  - [Code Usage CheatSheet](#code-usage-cheatsheet)
-  - [Appendix: Keras Model summary](#appendix-keras-model-summary)
+  - [Appendix](#appendix)
+  - [Code Usage](#code-usage)
+  - [Keras Model summary](#keras-model-summary)
 ___
 
 
@@ -97,7 +97,8 @@ Making the embeddings layer trainable could lead to even better results but was 
 Overall, our project demonstrated the potential of a collaborative filtering approach that learns to associate users to their "dating context" i.e. who they are co-liked with. We did not compare performances of this approach to learning embeddings from scratch during classifier training, but at least proved that it significantly (>20 times) speeds up the learning process.
 
 
-## Code Usage CheatSheet
+## Appendix
+## Code Usage
 
 This code was run inside of an Anaconda Continuum 3 docker container, in a conda environment based on `d2v_env.yml`. A `requirements.txt` file specifies the packages versions for full reproductibility.
 
@@ -117,7 +118,7 @@ Pre-commit can be used to apply `flake8` and `black` controls (and corrections).
 
     pre-commit
 
-## Appendix: Keras Model summary
+## Keras Model summary
 
 Keras embedding-based model summary:
 
