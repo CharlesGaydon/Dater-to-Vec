@@ -8,9 +8,9 @@ ___
     - [Embedding rated users - *Who likes you?*](#embedding-rated-users---who-likes-you)
     - [Embedding raters - *Who do you like?*](#embedding-raters---who-do-you-like)
     - [Predicting affinity between two users - *Are they your type?*](#predicting-affinity-between-two-users---are-they-your-type)
-- [Results](#results)
-- [Code Usage](#code-usage)
-- [Appendix](#appendix)
+  - [Results](#results)
+  - [Code Usage](#code-usage)
+  - [Appendix: Keras Model summary](#appendix-keras-model-summary)
 ___
 
 
@@ -24,7 +24,7 @@ Fortunaly, there is a class of NLP algorithms designed to do just that! Models l
 
 This approach as the merit of relying on actual swiping behavior shown by users, which may capture subconscious patterns of choice. It does so without explicit consideration for the users profiles and is hence privacy-preserving by design.
 
-> By experimenting with this approach on a custom classification task based on real dating data, we were able to predict with high confidence if dating app users will "like" other users, with a **ROC AUC of 87% and an accuracy of 86%**
+> By experimenting with this approach on a custom classification task based on real dating data, we were able to predict with high confidence if dating app users will "like" other users, with a **ROC AUC of 87% and an accuracy of 86%** (see [Results](#results)).
 
 Below, we discuss data, methods and results.
 
@@ -75,7 +75,7 @@ In practice, a Keras neural net was created, with two separate, unmutable embedd
 Making the embeddings layer trainable could lead to even better results but was slow: an epoch was estimated to last >16 hours, which made the comparison inpractical. We therefore do not compare the two approaches (trainable vs. non-trainable embeddings).
 
 
-# Results
+## Results
 
 ✅ Word Embeddings: Word2Vec training took 8min24sec, with a trainng loss going from 22,440k to 775k (/30 division) over 50 epochs, plateauing after 40 epochs. This demonstrates that there is room to learn users context in such data, as proposed by the TinVec approach.
 
@@ -92,7 +92,7 @@ Making the embeddings layer trainable could lead to even better results but was 
 Overall, our project demonstrated the potential of a collaborative filtering approach that learns to associate users to their "dating context" i.e. who they are co-liked with. We did not compare performances of this approach to learning embeddings from scratch during classifier training, but at least proved that it significantly (>20 times) speeds up the learning process.
 
 
-# Code Usage
+## Code Usage
 
 This code was run inside of an Anaconda Continuum 3 docker container, in a conda environment based on `d2v_env.yml`. A `requirements.txt` file specifies the packages versions for full reproductibility.
 
@@ -112,7 +112,7 @@ Pre-commit can be used to apply `flake8` and `black` controls (and corrections).
 
     pre-commit
 
-# Appendix
+## Appendix: Keras Model summary
 
 Keras embedding-based model summary:
 
