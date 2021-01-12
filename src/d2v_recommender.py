@@ -116,7 +116,11 @@ class D2V_Recommender:
             min_count=self.min_count,
             workers=self.workers,
             sample=self.sample,
+            sg=1,  # skip-gram
+            hs=0,
+            negative=5,
             callbacks=[loss_logger, model_saver],
+            seed=0,
         )
         model = self.w2v_model
         if resume_training:
@@ -251,10 +255,13 @@ class D2V_Recommender:
                 return self
 
             def __next__(self):
-                if self.i < self.data_length:
+                if self.i < 5 * self.data_length:
+                    # Shuffle at the end of the data
+                    if self.i % self.data_length == 0:
+                        self.data.apply(np.random.shuffle)
                     i = self.i
                     self.i += 1
-                    return self.data[i]  # a list
+                    return self.data[i % self.data_length]  # a list
                 else:
                     raise StopIteration()
 

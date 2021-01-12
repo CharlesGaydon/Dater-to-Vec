@@ -12,7 +12,7 @@ logs/
 .vscode-server/
 .vscode/
 .idea/
-
+.keras/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -41,11 +41,11 @@ class Config:
         else:  # PROD MODE
 
             self.d2v_params = {
-                "embedding_size": 200,
+                "embedding_size": 100,
                 "window": 5,
-                "min_count": 3,
+                "min_count": 1,
                 "workers": multiprocessing.cpu_count() - 1,
-                "num_epochs": 100,
+                "num_epochs": 50,
             }
             self.data_folder = self.data_folder / "prod/"
             self.logs_output_path = self.logs_output_path / "prod/"
