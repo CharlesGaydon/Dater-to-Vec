@@ -67,8 +67,15 @@ class Config:
 
         self.data_dict_path = self.data_folder / "data_dict.pickle"
 
-        self.tmp_automl_path = self.data_folder / "models/tmp/automl_tmp_output"
-        self.output_automl_path = self.data_folder / "models/automl_classifier_output"
+        self.keras_model_not_trainable = (
+            self.data_folder / "models/keras/classifier_not_trainable.h5"
+        )
+        self.keras_model_trainable = (
+            self.data_folder / "models/keras/classifier_trainable.h5"
+        )
+        self.keras_model_no_pretraining = (
+            self.data_folder / "models/keras/classifier_no_pretraining.h5"
+        )
 
 
 project_absolute_root = (
