@@ -8,7 +8,7 @@ ___
     - [Embedding rated users - *Who likes you?*](#embedding-rated-users---who-likes-you)
     - [Embedding raters - *Who do you like?*](#embedding-raters---who-do-you-like)
     - [Predicting affinity between two users - *Are they your type?*](#predicting-affinity-between-two-users---are-they-your-type)
-  - [Results: embedding and classification performances](#results-embedding-and-classification-performances)
+  - [Results](#results)
   - [Code Usage CheatSheet](#code-usage-cheatsheet)
   - [Appendix: Keras Model summary](#appendix-keras-model-summary)
 ___
@@ -75,7 +75,7 @@ In practice, a Keras neural net was created, with two separate, unmutable embedd
 Making the embeddings layer trainable could lead to even better results but was slow: an epoch was estimated to last >16 hours, which made the comparison inpractical. We therefore do not compare the two approaches (trainable vs. non-trainable embeddings).
 
 
-## Results: embedding and classification performances
+## Results
 
 
 ✅ Word Embeddings: Word2Vec training took 8min24sec, with a trainng loss going from 22,440k to 775k (/30 division) over 50 epochs, plateauing after 40 epochs. This demonstrates that there is room to learn users context in such data, as proposed by the TinVec approach.
