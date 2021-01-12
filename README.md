@@ -1,5 +1,9 @@
 # Dater-to-Vec
-Collaborative filtering in dating : a NLP-based user embedding approach inspired from Tinder's TinVec.
+> **Collaborative filtering in dating : a NLP-based user embedding approach inspired from Tinder's TinVec.**
+
+**or**
+
+> **How one can predict who a dating app user will _like_ or _pass_ based on the dating preferences of the whole user community.**
 ___
 - [Dater-to-Vec](#dater-to-vec)
   - [An Overview of TinVec](#an-overview-of-tinvec)
