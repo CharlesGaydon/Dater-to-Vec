@@ -8,8 +8,8 @@ ___
     - [Embedding rated users - *Who likes you?*](#embedding-rated-users---who-likes-you)
     - [Embedding raters - *Who do you like?*](#embedding-raters---who-do-you-like)
     - [Predicting affinity between two users - *Are they your type?*](#predicting-affinity-between-two-users---are-they-your-type)
-  - [Results](#results)
-  - [Code Usage](#code-usage)
+  - [Results: embedding and classification performances](#results-embedding-and-classification-performances)
+  - [Code Usage CheatSheet](#code-usage-cheatsheet)
   - [Appendix: Keras Model summary](#appendix-keras-model-summary)
 ___
 
@@ -75,7 +75,8 @@ In practice, a Keras neural net was created, with two separate, unmutable embedd
 Making the embeddings layer trainable could lead to even better results but was slow: an epoch was estimated to last >16 hours, which made the comparison inpractical. We therefore do not compare the two approaches (trainable vs. non-trainable embeddings).
 
 
-## Results
+## Results: embedding and classification performances
+
 
 ✅ Word Embeddings: Word2Vec training took 8min24sec, with a trainng loss going from 22,440k to 775k (/30 division) over 50 epochs, plateauing after 40 epochs. This demonstrates that there is room to learn users context in such data, as proposed by the TinVec approach.
 
@@ -92,7 +93,7 @@ Making the embeddings layer trainable could lead to even better results but was 
 Overall, our project demonstrated the potential of a collaborative filtering approach that learns to associate users to their "dating context" i.e. who they are co-liked with. We did not compare performances of this approach to learning embeddings from scratch during classifier training, but at least proved that it significantly (>20 times) speeds up the learning process.
 
 
-## Code Usage
+## Code Usage CheatSheet
 
 This code was run inside of an Anaconda Continuum 3 docker container, in a conda environment based on `d2v_env.yml`. A `requirements.txt` file specifies the packages versions for full reproductibility.
 
