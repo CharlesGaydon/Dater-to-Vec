@@ -13,8 +13,8 @@ ___
     - [Predicting affinity between two users - *Are they your type?*](#predicting-affinity-between-two-users---are-they-your-type)
   - [Results](#results)
   - [Appendix](#appendix)
-  - [Code Usage](#code-usage)
-  - [Keras Model summary](#keras-model-summary)
+    - [Code Usage](#code-usage)
+    - [Keras Model summary](#keras-model-summary)
 ___
 
 
@@ -98,7 +98,7 @@ Overall, our project demonstrated the potential of a collaborative filtering app
 
 
 ## Appendix
-## Code Usage
+### Code Usage
 
 This code was run inside of an Anaconda Continuum 3 docker container, in a conda environment based on `d2v_env.yml`. A `requirements.txt` file specifies the packages versions for full reproductibility.
 
@@ -118,7 +118,7 @@ Pre-commit can be used to apply `flake8` and `black` controls (and corrections).
 
     pre-commit
 
-## Keras Model summary
+### Keras Model summary
 
 Keras embedding-based model summary:
 
