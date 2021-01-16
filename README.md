@@ -15,7 +15,7 @@ ___
   - [Appendix](#appendix)
     - [Code Usage](#code-usage)
       - [Environment setup](#environment-setup)
-      - [Runnin code](#runnin-code)
+      - [Training models](#training-models)
     - [Keras Model summary](#keras-model-summary)
 ___
 
@@ -106,72 +106,73 @@ Overall, our project demonstrated the potential of a collaborative filtering app
 
 Code is run inside an Anaconda Continuum 3 docker container (see `Dockerfile`), in a conda environment whose dependencies are listed in `environment.yml`. To setup, clone the repo, get inside, and run:
 
-```bash
-docker build -t dater_to_vec:v1 .  # build the container image
-docker run -it ---name dater_to_vec -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1  # run in interactive mode
+```console
+cgaydon@laptop:~/Repositories/Dater-to-Vec/ docker build -t dater_to_vec:v1 .  # build the container image
+cgaydon@laptop:~/Repositories/Dater-to-Vec/ docker run -it --name dater_to_vec -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1  # run in interactive mode
 ```
 
 To get started in another session, with the conda env activated, run:
-```bash
-    docker start dater_to_vec
-    docker exec -it -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1 bash
+```console
+cgaydon@laptop:~/Repositories/Dater-to-Vec/ docker start dater_to_vec
+cgaydon@laptop:~/Repositories/Dater-to-Vec/ docker exec -it -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1 bash
 ```
 
 
-#### Runnin code
+#### Training models
 
-Switch between train and developping mode by modifying `DEV_MODE` in `src/config.py`.
+Switch between train and developping mode by modifying `DEV_MODE` (boolean) in `src/config.py`.
 
-Get the data and split into test and training, optionnaly up to a certain rater ID with:
-```bash
-    python src/processing.py [--max_id 150000]
+Download the dataset and split it into test and training sets, optionnaly up to a certain rater ID with:
+```console
+(d2v_env) root@container::~$ python src/processing.py [--max_id 150000]
 ```
 
-Train the Word2Vec model (step 1), learn raters embeddings (step 2) and get the rater-rated distance (step 3) with:
+Train the Word2Vec model (step 1) and learn raters embeddings (step 2):
 
-```bash
-    python train.py [--steps 123] [--resume_training n]
+```console
+(d2v_env) root@container::~$ python train.py --steps 12 [--resume_training n]
 ```
 
 Train the final classifer by running the Jupyter notebook `notebooks/Embedding Classifier - trainable=False.ipynb` and show evaluation in `notebooks/Embedding Classifier - comparison.ipynb`.
 
 Pre-commit can be used to apply `flake8` and `black` controls (and corrections). Run at root with:
-```bash
-    pre-commit
-
+```console
+(d2v_env) root@container::~$ pre-commit
+```
 ### Keras Model summary
 
 Keras embedding-based model summary:
+```python
+__________________________________________________________________________________________________
+Layer (type) Output Shape Param
+# Connected to
+==================================================================================================
+input_13 (InputLayer) [(None, 1)] 0
 
-    __________________________________________________________________________________________________
-    Layer (type) Output Shape Param
-    # Connected to
-    ==================================================================================================
-    input_13 (InputLayer) [(None, 1)] 0
+__________________________________________________________________________________________________
+input_14 (InputLayer) [(None, 1)] 0
 
-     __________________________________________________________________________________________________
-    input_14 (InputLayer) [(None, 1)] 0
+__________________________________________________________________________________________________
+embedding_12 (Embedding) (None, 1, 100) 13536000 input_13[0][0]
 
-     __________________________________________________________________________________________________
-    embedding_12 (Embedding) (None, 1, 100) 13536000 input_13[0][0]
+__________________________________________________________________________________________________
+embedding_13 (Embedding) (None, 1, 100) 22097100 input_14[0][0]
 
-     __________________________________________________________________________________________________
-    embedding_13 (Embedding) (None, 1, 100) 22097100 input_14[0][0]
+__________________________________________________________________________________________________
+concatenate_6 (Concatenate) (None, 1, 200) 0 embedding_12[0][0] embedding_13[0][0]
 
-     __________________________________________________________________________________________________
-    concatenate_6 (Concatenate) (None, 1, 200) 0 embedding_12[0][0] embedding_13[0][0]
+__________________________________________________________________________________________________
+dense_18 (Dense) (None, 1, 50) 10050 concatenate_6[0][0]
 
-     __________________________________________________________________________________________________
-    dense_18 (Dense) (None, 1, 50) 10050 concatenate_6[0][0]
+__________________________________________________________________________________________________
+dense_19 (Dense) (None, 1, 25) 1275 dense_18[0][0]
 
-     __________________________________________________________________________________________________
-    dense_19 (Dense) (None, 1, 25) 1275 dense_18[0][0]
+__________________________________________________________________________________________________
+dense_20 (Dense) (None, 1, 1) 26 dense_19[0][0]
 
-     __________________________________________________________________________________________________
-    dense_20 (Dense) (None, 1, 1) 26 dense_19[0][0]
+==================================================================================================
 
-     ==================================================================================================
+Total params: 35,644,451 Trainable params: 11,351 Non-trainable params: 35,633,100
 
-    Total params: 35,644,451 Trainable params: 11,351 Non-trainable params: 35,633,100
-
-     __________________________________________________________________________________________________
+__________________________________________________________________________________________________
+```

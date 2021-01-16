@@ -23,7 +23,7 @@ def get_args():
     parser.add_argument(
         "--resume_training",
         help="Whether to resume to a previously trained w2v model",
-        default="y",
+        default="n",
         choices=["y", "n"],
     )
     parser.add_argument(
