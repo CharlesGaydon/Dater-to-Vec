@@ -29,7 +29,7 @@ tqdm.pandas()
 
 
 class LossLogger(CallbackAny2Vec):
-    """Output loss at each epoch"""
+    """Gensim callback to output loss at each epoch"""
 
     def __init__(self):
         self.epoch = 1
@@ -49,7 +49,7 @@ class LossLogger(CallbackAny2Vec):
 
 
 class ModelSaver(CallbackAny2Vec):
-    """Output loss at each epoch"""
+    """Gensim callback to save model every log_frequency epochs"""
 
     def __init__(
         self, d2v_object, rated_embeddings_path, w2v_model_path, log_frequency=5
@@ -100,9 +100,9 @@ class D2V_Recommender:
         self, d2v_train, w2v_model_path, rated_embeddings_path, resume_training=False
     ):
         """
+        Fit and save Word2Vec model to embed rated users based on dating behavior of raters.
 
-        :param d2v_train: a pd.Series of list of strings of rated_ids that were co-swiped
-        :return:
+        :param d2v_train: A pd.Series of list of rated_ids (string) that were co-liked by a rater
         """
         # Prepare the data iterator
         d2v_train_iterator = self.build_data_iterator(d2v_train)
@@ -145,8 +145,9 @@ class D2V_Recommender:
 
     def fit_rater_embeddings(self, input_train, save_path=False):
         """
-        :param df_: a pd.Series of list of strings of rated_ids that were co-swiped
-        :return:
+        Calculate an embedding for raters as the mean of embeddings of users they liked.
+
+        :param df_: a pd.Series of list of rated_ids (string) that were co-liked by a rater
         """
         A_col, B_col, m_col = input_train.columns
         train_ = input_train.copy()
@@ -167,7 +168,11 @@ class D2V_Recommender:
 
     def prepare_X_y_dataset(self, train_, test_, data_dict_path=False):
         """
-        :param train
+        Calculate the embeddings euclidian distance (X) aligned with potential likes (y).
+
+        :param train_: rater_id, rated_id, match (0/1) pandas Dataset
+        :param test_: rater_id, rated_id, match (0/1) pandas Dataset
+        :return data_dict: dictionnary of X_test, X_train, y_test, y_train np arrays.
         """
         A_col, B_col, m_col = train_.columns
 
@@ -218,23 +223,9 @@ class D2V_Recommender:
         if data_dict_path:
             self.save_data_dict(data_dict_path)
 
-    def predict(self, u, v):
-        # get embedding of u
-        vec_A = self.get_single_rater_vec(u)
-        vec_B = self.get_single_rated_vec(v)
-        X_vec = vec_A.values - vec_B
-        pred = self.classifier.predict(X_vec)
-        return pred
-
-    def predict_proba(self, u, v):
-        # get embedding of u
-        vec_A = self.get_single_rater_vec(u)
-        vec_B = self.get_single_rated_vec(v)
-        X_vec = vec_A.values - vec_B
-        proba = self.classifier.predict_proba(X_vec)
-        return proba
-
     def build_data_iterator(self, data):
+        """ Create an iterator of which an iter is random passes on the data"""
+
         class shuffle_generator:
             def __init__(self, data):
                 self.data = data
@@ -267,23 +258,19 @@ class D2V_Recommender:
 
         return shuffle_generator(data)
 
-    def set_classifier(self, classifier):
-        self.classifier = classifier
-
     def get_single_rated_vec(self, rated_id):
-
+        """ Get embedding vector of rated user of id rated_id"""
         try:
             return self.wv[str(rated_id)]
         except KeyError:
-            # The rate user did not appear in the training dataset
+            # The rated user did not appear in the training dataset
             return None
 
-    def get_single_rater_vec(self, rated_id):
-        # Should always exist
+    def get_single_rater_vec(self, rater_id):
+        """ Get embedding vector of rater user of id rater_id"""
         try:
-            return self.mean_embeddings.loc[str(rated_id)].values
+            return self.mean_embeddings.loc[str(rater_id)].values
         except KeyError:
-            # The rater user did not have rated people with the sufficient number of occurence (default: >3)
             return None
 
     def save_rated_vec(self, wordvectors_path):
