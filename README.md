@@ -14,6 +14,8 @@ ___
   - [Results](#results)
   - [Appendix](#appendix)
     - [Code Usage](#code-usage)
+      - [Environment setup](#environment-setup)
+      - [Runnin code](#runnin-code)
     - [Keras Model summary](#keras-model-summary)
 ___
 
@@ -100,22 +102,41 @@ Overall, our project demonstrated the potential of a collaborative filtering app
 ## Appendix
 ### Code Usage
 
-This code was run inside of an Anaconda Continuum 3 docker container, in a conda environment based on `d2v_env.yml`. A `requirements.txt` file specifies the packages versions for full reproductibility.
+#### Environment setup
+
+Code is run inside an Anaconda Continuum 3 docker container (see `Dockerfile`), in a conda environment whose dependencies are listed in `environment.yml`. To setup, clone the repo, get inside, and run:
+
+```bash
+docker build -t dater_to_vec:v1 .  # build the container image
+docker run -it ---name dater_to_vec -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1  # run in interactive mode
+```
+
+To get started in another session, with the conda env activated, run:
+```bash
+    docker start dater_to_vec
+    docker exec -it -v ~/host/.../Dater-to-Vec:/root/ -p 8888:8888 dater_to_vec:v1 bash
+```
+
+
+#### Runnin code
 
 Switch between train and developping mode by modifying `DEV_MODE` in `src/config.py`.
 
 Get the data and split into test and training, optionnaly up to a certain rater ID with:
-
+```bash
     python src/processing.py [--max_id 150000]
+```
 
 Train the Word2Vec model (step 1), learn raters embeddings (step 2) and get the rater-rated distance (step 3) with:
 
+```bash
     python train.py [--steps 123] [--resume_training n]
+```
 
 Train the final classifer by running the Jupyter notebook `notebooks/Embedding Classifier - trainable=False.ipynb` and show evaluation in `notebooks/Embedding Classifier - comparison.ipynb`.
 
 Pre-commit can be used to apply `flake8` and `black` controls (and corrections). Run at root with:
-
+```bash
     pre-commit
 
 ### Keras Model summary
