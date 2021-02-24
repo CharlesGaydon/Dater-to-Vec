@@ -60,8 +60,7 @@ class AverageRecommender:
             pred = self.predict(row[A_col], row[B_col])
             if pred is not None:
                 obs = row[R_col]
-                rmse += abs(pred - obs)
-                n += 1
+                rmse = rmse + abs(pred - obs)
+                n = n + 1
 
         return np.round(rmse / n, 3), n
-    
